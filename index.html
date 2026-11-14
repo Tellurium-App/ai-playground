@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <title>AIの遊び場</title>
+  <meta name="description" content="AIで作った、ブラウザでそのまま触れる小さな作品の棚。">
+  <meta property="og:title" content="AIの遊び場">
+  <meta property="og:description" content="AIで作った、ブラウザでそのまま触れる小さな作品の棚。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tellurium-app.github.io/ai-playground/">
+  <meta property="og:image" content="https://tellurium-app.github.io/ai-playground/thumbs/grand-orrery.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./home.css">
+</head>
+<body>
+  <header class="top">
+    <p class="kicker">PLAYGROUND</p>
+    <h1>AIの遊び場</h1>
+    <p class="lede">AIで作った、ブラウザでそのまま触れる小さな作品の棚です。インストールも登録もいりません。</p>
+  </header>
+
+  <main>
+    <section aria-labelledby="shelf-3d">
+      <h2 id="shelf-3d">動く機械の3D展示</h2>
+      <ul class="cards">
+        <li class="card">
+          <a href="./radial-9/">
+            <img src="./thumbs/radial-9.webp" width="800" height="500" alt="星型9気筒エンジンの断面模型。上の2気筒が赤い切断面で切られ、中のピストンとバルブが見える">
+            <div class="body">
+              <h3>星型9気筒エンジンの断面</h3>
+              <p>1本のマスターロッドと8本のリンクロッドで9個のピストンが動く仕組みを、回して、切って、分解して観察できます。</p>
+              <ul class="tags"><li>スマホ可</li><li>音あり（最初はOFF）</li><li>日本語 / English</li></ul>
+            </div>
+          </a>
+        </li>
+        <li class="card">
+          <a href="./grand-orrery/">
+            <img src="./thumbs/grand-orrery.webp" width="800" height="500" alt="真鍮の太陽系儀。渾天儀の輪の中で惑星が回り、木の台座の断面から歯車が見える">
+            <div class="body">
+              <h3>真鍮の太陽系儀と渾天儀</h3>
+              <p>歯車の歯数の比だけで、水星から土星まで実際の公転周期とほぼ同じ速さで回ります。台座を切って、中の歯車列も見られます。</p>
+              <ul class="tags"><li>スマホ可</li><li>音あり（最初はOFF）</li><li>日本語 / English</li></ul>
+            </div>
+          </a>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>どの作品も実験作です。公開した時点の版で固定していて、更新はしません。</p>
+    <p>3D表示に <a href="https://threejs.org/">three.js</a>（MIT License）を使っています。ライセンス文は各作品の <code>vendor/LICENSE-three.txt</code> にあります。</p>
+  </footer>
+</body>
+</html>

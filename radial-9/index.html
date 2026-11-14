@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'none'; font-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <title>Radial-9 Cutaway Studio</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./vendor/three-studio.bundle.js"></script>
+  <script defer src="./js/kinematics.js"></script>
+  <script defer src="./js/engine_builder.js"></script>
+  <script defer src="./js/audio_engine.js"></script>
+  <script defer src="./js/app.js"></script>
+  <link rel="stylesheet" href="../playground-back.css">
+</head>
+<body>
+  <a class="pg-back" href="../">遊び場に戻る</a>
+  <header class="masthead">
+    <a class="wordmark" href="#studio" aria-label="Radial-9 Cutaway Studio"><span class="brand-symbol" aria-hidden="true">✳</span><span>RADIAL<span class="brand-nine">—9</span><small>CUTAWAY STUDIO</small></span></a>
+    <div class="edition"><span class="eyebrow" data-i18n="exhibit">機構展示 / 001</span><span data-i18n="subtitle">空冷単列9気筒・4ストローク</span></div>
+    <div class="language" aria-label="Language"><button id="lang-ja" class="active" lang="ja">日本語</button><button id="lang-en" lang="en">EN</button></div>
+  </header>
+  <main id="studio" class="studio">
+    <section class="viewport" aria-label="3D engine exhibit">
+      <div class="scene-heading"><span class="eyebrow" data-i18n="specimen">航空機エンジン / 稼働カットモデル</span><h1 data-i18n="title">星型9気筒の内部機構</h1><p data-i18n="intro">1本のマスターロッドと8本のリンクロッドが、9個のピストンを駆動します。</p></div>
+      <div id="canvas-host" class="canvas-host"></div>
+      <div id="fallback" class="fallback" hidden><h2 data-i18n="fallbackTitle">3D表示を開始できませんでした</h2><p data-i18n="fallbackBody">WebGL 2対応のブラウザで開き、ハードウェアアクセラレーションを有効にしてください。下の操作盤では工程とクランク角を確認できます。</p></div>
+      <span class="model-tag tag-one">01 <span data-i18n="section">切断面</span></span><span class="model-tag tag-two">02</span>
+      <div class="view-toolbar"><span class="eyebrow" data-i18n="camera">視点</span><div class="camera-buttons"><button data-camera="overview" class="active" data-i18n="overview">全体斜視</button><button data-camera="macro" data-i18n="macro">燃焼室・バルブ</button><button data-camera="master" data-i18n="master">マスターロッド</button><button data-camera="rear" data-i18n="rear">背面排気リング</button></div></div>
+      <div class="view-footer"><span class="live-indicator"><i></i><span id="motion-label" data-i18n="running">稼働中</span></span><span data-i18n="orbitHint">ドラッグで360°回転 / スクロールでズーム</span><span class="geometry-label">4-LOBE CAM · −1:8</span></div>
+    </section>
+    <aside class="instrument-panel">
+      <div class="panel-header"><span class="eyebrow" data-i18n="controls">機構操作盤</span><button id="collapse" aria-expanded="true" data-i18n="compact">折りたたむ</button></div>
+      <div class="panel-body">
+        <section class="speed-section"><div class="section-label"><h2 data-i18n="speed">展示回転数</h2><button id="play" class="square-button" data-i18n="pause" title="Space">一時停止</button></div>
+          <div class="speed-readout"><strong id="rpm-value">45</strong><span>RPM<small data-i18n="displaySpeed">観察用速度</small></span><div class="dial" aria-hidden="true"><span id="dial-needle"></span></div></div>
+          <input id="rpm" type="range" min="0" max="240" value="45" step="1" aria-label="RPM">
+          <div class="range-ticks"><span>0</span><span id="equivalent">450 RPM</span><span>240</span></div><p class="meter-caption" data-i18n="meter">換算計器 ×10（展示用目盛）</p>
+          <div class="speed-presets"><button data-rpm="12" data-i18n="slow">超スロー 12</button><button data-rpm="45" class="active" data-i18n="idle">展示 45</button><button data-rpm="180" data-i18n="cruise">巡航 180</button></div>
+        </section>
+        <section class="angle-section"><div class="section-label"><label for="angle" data-i18n="crank">クランク角</label><output id="angle-value" for="angle">035°</output></div><input id="angle" type="range" min="0" max="720" value="35" step="1"><div class="range-ticks"><span>0°</span><span data-i18n="cycle">4ストローク / 720°</span><span>720°</span></div></section>
+        <section><div class="section-label"><label for="explode" data-i18n="explode">分解図</label><output id="explode-value" for="explode">0%</output></div><input id="explode" type="range" min="0" max="100" value="0" step="1"><div class="range-ticks"><span data-i18n="assembled">組立位置</span><button id="reset" data-i18n="reset">組立位置へ戻す</button></div></section>
+        <section><h2 data-i18n="exterior">外装表示</h2><div class="mode-buttons"><button data-mode="cutaway" class="active" data-i18n="cutaway">カット断面</button><button data-mode="full" data-i18n="full">フル外装</button><button data-mode="xray" data-i18n="xray">X線透過</button></div></section>
+        <section class="sound-section"><div><h2 data-i18n="sound">排気パルス</h2><p data-i18n="soundHint">80°ごとの点火に同期</p></div><button id="sound" aria-pressed="false" data-i18n="soundOff">音声 OFF</button></section>
+      </div>
+      <div class="panel-note"><span class="note-number">9</span><p data-i18n="camNote">4ローブ・2列のカムリングは、クランクと逆方向へ1/8速で回転。</p></div>
+    </aside>
+    <section class="telemetry"><div class="telemetry-heading"><span class="eyebrow" data-i18n="telemetry">9気筒テレメトリ</span><p><span data-i18n="lastFire">直近点火</span> <strong id="last-fired">No.1</strong></p></div><div id="cylinder-status" class="cylinder-status"></div><div class="stroke-legend"><span class="power" data-i18n="power">膨張</span><span class="exhaust" data-i18n="exhaust">排気</span><span class="intake" data-i18n="intake">吸気</span><span class="compression" data-i18n="compression">圧縮</span></div></section>
+  </main>
+  <footer class="site-footer"><p><span data-i18n="firing">点火順序</span> <b>1—3—5—7—9—2—4—6—8</b> <span class="footer-separator">/</span> <span data-i18n="interval">公称点火間隔 80°</span></p><details><summary data-i18n="mechanism">機構とモデルについて</summary><div class="mechanism-copy"><p data-i18n="explanation">ナックルピンはマスターロッドに剛体固定。各リンクの長さを保った幾何解でピストンを動かしています。</p><p data-i18n="timingNote">リンク側の幾何学的上死点は公称点火角から最大約2.75°ずれます。この展示は厳密ロッド幾何と80°間隔の点火位相を併記した教育モデルです。</p><p data-i18n="scaleNote">寸法は展示用の相対単位です。特定の実機を再現した整備資料ではありません。</p></div></details></footer>
+</body>
+</html>

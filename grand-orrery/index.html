@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'none'; font-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="Offline mechanical orrery with six concentric sleeves, integer gear trains and an armillary sphere.">
+  <title>Grand Orrery &amp; Armillary Studio</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="vendor/three-studio.bundle.js"></script>
+  <script defer src="js/kinematics.js"></script>
+  <script defer src="js/orrery_builder.js"></script>
+  <script defer src="js/audio_engine.js"></script>
+  <script defer src="js/app.js"></script>
+  <link rel="stylesheet" href="../playground-back.css">
+</head>
+<body>
+  <a class="pg-back" href="../">遊び場に戻る</a>
+<main class="studio">
+  <section class="stage" aria-label="3D exhibit">
+    <canvas id="scene" tabindex="0"></canvas>
+    <header class="title-card backplate">
+      <div class="eyebrow"><span data-i18n="observatory"></span><span class="edition">06 / 20:20</span></div>
+      <h1 data-i18n="title"></h1>
+      <p data-i18n="subtitle"></p>
+      <div class="title-footer"><span id="part-count"></span><div class="language"><button id="lang-ja" lang="ja">日本語</button><button id="lang-en" lang="en">EN</button></div></div>
+    </header>
+    <div id="fallback" class="fallback backplate" hidden><h2 data-i18n="fallbackTitle"></h2><p data-i18n="fallbackBody"></p></div>
+    <nav class="camera-bar backplate" aria-label="Camera">
+      <button data-camera="overview" data-i18n="overview"></button><button data-camera="earth" data-i18n="earthCamera"></button><button data-camera="gears" data-i18n="gearsCamera"></button><button data-camera="top" data-i18n="topCamera"></button>
+    </nav>
+    <div class="stage-caption backplate" data-i18n="orbitHint"></div>
+  </section>
+  <aside class="instrument-panel">
+    <div class="panel-heading"><span class="index">I</span><h2 data-i18n="timeHeading"></h2><button id="audio" data-i18n="audioOff"></button></div>
+    <section class="time-controls">
+      <div class="readout"><div><span data-i18n="elapsed"></span><strong id="year-value"></strong></div><div><span data-i18n="days"></span><strong id="day-value"></strong></div></div>
+      <label class="slider-label" for="years"><span data-i18n="scrub"></span><span id="scrub-range"></span></label>
+      <input id="years" type="range" min="0" max="30" step="0.0001" value="0.137">
+      <div class="transport"><button id="play"></button><button id="direction"></button></div>
+      <label class="slider-label" for="speed"><span data-i18n="speed"></span><output id="speed-value"></output></label>
+      <input id="speed" type="range" min="5" max="730.51272" step="0.01" value="30">
+      <div class="speed-presets"><button data-speed="5" data-i18n="slow"></button><button data-speed="30" data-i18n="normal"></button><button data-speed="180" data-i18n="fast"></button><button data-speed="730.51272" data-i18n="outer"></button></div>
+      <div class="crank-row"><div id="crank-pad" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0.137"><span class="pad-pointer"></span><span class="pad-center">↺</span></div><div><h3 data-i18n="crankTitle"></h3><p data-i18n="crankHint"></p><span class="small-note" data-i18n="crankRatio"></span></div></div>
+    </section>
+    <section class="assembly-controls"><div class="section-heading"><span class="index">II</span><h2 data-i18n="assemblyHeading"></h2></div>
+      <div class="mode-grid"><button data-mode="exhibition" data-i18n="exhibition"></button><button data-mode="cutaway" data-i18n="cutaway"></button><button data-mode="focus" data-i18n="focus"></button></div>
+      <label class="slider-label" for="explode"><span data-i18n="explode"></span><output id="explode-value">0%</output></label><input id="explode" type="range" min="0" max="1" step="0.01" value="0">
+      <button id="reset" class="wide" data-i18n="reset"></button>
+    </section>
+    <section class="telemetry-section"><div class="section-heading"><span class="index">III</span><h2 data-i18n="telemetryHeading"></h2></div><div id="telemetry" class="telemetry"></div></section>
+    <section class="mechanism-note"><h3 data-i18n="mechanismTitle"></h3><p data-i18n="mechanismBody"></p><p data-i18n="moonNote"></p></section>
+    <footer class="panel-footer"><span data-i18n="footer"></span><span id="render-stat"></span></footer>
+  </aside>
+</main>
+</body>
+</html>

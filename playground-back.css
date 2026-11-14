@@ -1,0 +1,10 @@
+/* 各作品に1本だけ足す「遊び場に戻る」タブ。作品の中身には触らない */
+.pg-back{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:2147483000;
+  writing-mode:vertical-rl;padding:12px 5px;border-radius:0 8px 8px 0;
+  background:rgba(12,16,22,.82);color:#e9e4d8;border:1px solid rgba(233,228,216,.28);border-left:0;
+  font:600 11px/1 system-ui,-apple-system,"Segoe UI","Hiragino Sans","Yu Gothic UI",sans-serif;letter-spacing:.12em;
+  text-decoration:none;opacity:.72;transition:opacity .15s,padding .15s}
+.pg-back:hover,.pg-back:focus-visible{opacity:1;padding-left:9px}
+.pg-back:focus-visible{outline:2px solid #e9e4d8;outline-offset:2px}
+@media (max-width:640px){.pg-back{top:30%;padding:10px 4px;font-size:10px}}
+@media print{.pg-back{display:none}}

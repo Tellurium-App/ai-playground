@@ -1,0 +1,30 @@
+:root{
+  --bg:#0d1117;--surface:#161c24;--line:#2a333f;--text:#ece8df;--muted:#a7adb6;--accent:#e2b86f;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg);color:var(--text);
+  font:16px/1.75 system-ui,-apple-system,"Segoe UI","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif}
+body{margin:0 auto;max-width:1080px;padding:0 16px 48px}
+a{color:inherit}
+.top{padding:56px 0 32px}
+.kicker{margin:0;color:var(--accent);font-size:12px;letter-spacing:.24em;font-weight:600}
+h1{margin:6px 0 10px;font-size:clamp(30px,6vw,44px);line-height:1.2;letter-spacing:.02em}
+.lede{margin:0;color:var(--muted);max-width:36em}
+h2{font-size:15px;letter-spacing:.08em;color:var(--muted);font-weight:600;margin:16px 0 14px;
+  padding-bottom:10px;border-bottom:1px solid var(--line)}
+.cards{list-style:none;margin:0;padding:0;display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}
+.card a{display:block;height:100%;text-decoration:none;background:var(--surface);border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;transition:border-color .15s,transform .15s}
+.card a:hover{border-color:var(--accent);transform:translateY(-2px)}
+.card a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.card img{display:block;width:100%;height:auto;aspect-ratio:8/5;object-fit:cover;background:#0a0e13}
+.body{padding:16px 18px 18px}
+h3{margin:0 0 6px;font-size:18px;line-height:1.45}
+.body p{margin:0;color:var(--muted);font-size:14px}
+.tags{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.tags li{font-size:12px;line-height:1;padding:6px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
+.foot{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+.foot p{margin:4px 0}
+.foot code{font-size:12px}
+@media (prefers-reduced-motion:reduce){.card a{transition:none}.card a:hover{transform:none}}
