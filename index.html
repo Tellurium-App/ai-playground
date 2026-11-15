@@ -3,62 +3,164 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
   <title>AIの遊び場</title>
-  <meta name="description" content="AIで作った、ブラウザでそのまま触れる小さな作品の棚。">
+  <meta name="description" content="AIと一緒に作った模型や小さな作品を置いている、ブラウザの中の展示館です。">
   <meta property="og:title" content="AIの遊び場">
-  <meta property="og:description" content="AIで作った、ブラウザでそのまま触れる小さな作品の棚。">
+  <meta property="og:description" content="AIと一緒に作った模型や小さな作品を置いている、ブラウザの中の展示館です。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://tellurium-app.github.io/ai-playground/">
   <meta property="og:image" content="https://tellurium-app.github.io/ai-playground/thumbs/grand-orrery.webp">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./home.css">
+  <script defer src="./home.js"></script>
 </head>
 <body>
   <header class="top">
-    <p class="kicker">PLAYGROUND</p>
+    <p class="kicker">PLAYGROUND ・ 小さな展示館</p>
     <h1>AIの遊び場</h1>
-    <p class="lede">AIで作った、ブラウザでそのまま触れる小さな作品の棚です。インストールも登録もいりません。</p>
+    <p class="lede">AIと一緒に作った模型や小さな作品を置いている、ブラウザの中の展示館です。</p>
+
+    <nav class="guide" aria-labelledby="guide-title">
+      <h2 id="guide-title">館内案内</h2>
+      <ol class="rooms">
+        <li><a href="#room-1"><span class="room-no">第1室</span><span class="room-name">動く機械</span><span class="room-count">3点</span></a></li>
+      </ol>
+      <p class="guide-note">作品が増えたら部屋を足していきます。</p>
+    </nav>
   </header>
 
   <main>
-    <section aria-labelledby="shelf-3d">
-      <h2 id="shelf-3d">動く機械の3D展示</h2>
-      <ul class="cards">
-        <li class="card">
-          <a href="./radial-9/">
-            <img src="./thumbs/radial-9.webp" width="800" height="500" alt="星型9気筒エンジンの断面模型。上の2気筒が赤い切断面で切られ、中のピストンとバルブが見える">
-            <div class="body">
-              <h3>星型9気筒エンジンの断面</h3>
-              <p>1本のマスターロッドと8本のリンクロッドで9個のピストンが動く仕組みを、回して、切って、分解して観察できます。</p>
-              <ul class="tags"><li>スマホ可</li><li>音あり（最初はOFF）</li><li>日本語 / English</li></ul>
-            </div>
-          </a>
+    <section id="room-1" class="room" aria-labelledby="room-1-title">
+      <header class="room-head">
+        <p class="room-no">第1室</p>
+        <h2 id="room-1-title">動く機械</h2>
+        <p class="room-lede">中で何が起きているのかを、回して、切って、分解して見る部屋です。</p>
+      </header>
+
+      <ul class="exhibits">
+        <li class="exhibit">
+          <a class="exhibit-img" href="./radial-9/"><img src="./thumbs/radial-9.webp" width="800" height="500" alt="星型9気筒エンジンの断面模型。上の2気筒が赤い切断面で切られ、中のピストンとバルブが見える"></a>
+          <div class="plate">
+            <p class="plate-no">1-01</p>
+            <h3><a href="./radial-9/">星型9気筒エンジンの断面</a></h3>
+            <p class="subject">題材: 航空機用の星型エンジン（R-975／R-985 級の配置を参考）</p>
+            <p class="desc">9本のシリンダーを放射状に並べたエンジンを、回して、切って、分解して観察できます。</p>
+            <ul class="tags"><li>スマホ可</li><li>音あり（最初はOFF）</li><li>日本語 / English</li></ul>
+            <div class="actions"><a class="open" href="./radial-9/">展示を開く</a><button type="button" class="more" data-dialog="about-radial-9">解説を読む</button></div>
+          </div>
         </li>
-        <li class="card">
-          <a href="./grand-orrery/">
-            <img src="./thumbs/grand-orrery.webp" width="800" height="500" alt="真鍮の太陽系儀。渾天儀の輪の中で惑星が回り、木の台座の断面から歯車が見える">
-            <div class="body">
-              <h3>真鍮の太陽系儀と渾天儀</h3>
-              <p>歯車の歯数の比だけで、水星から土星まで実際の公転周期とほぼ同じ速さで回ります。台座を切って、中の歯車列も見られます。</p>
-              <ul class="tags"><li>スマホ可</li><li>音あり（最初はOFF）</li><li>日本語 / English</li></ul>
-            </div>
-          </a>
+        <li class="exhibit">
+          <a class="exhibit-img" href="./grand-orrery/"><img src="./thumbs/grand-orrery.webp" width="800" height="500" alt="真鍮の太陽系儀。渾天儀の輪の中で惑星が回り、木の台座の断面から歯車が見える"></a>
+          <div class="plate">
+            <p class="plate-no">1-02</p>
+            <h3><a href="./grand-orrery/">真鍮の太陽系儀と渾天儀</a></h3>
+            <p class="subject">題材: 18〜19世紀の真鍮の科学機器</p>
+            <p class="desc">歯車の歯数の比だけで、水星から土星までが実際とほぼ同じ速さで太陽のまわりを回ります。</p>
+            <ul class="tags"><li>スマホ可</li><li>音あり（最初はOFF）</li><li>日本語 / English</li></ul>
+            <div class="actions"><a class="open" href="./grand-orrery/">展示を開く</a><button type="button" class="more" data-dialog="about-grand-orrery">解説を読む</button></div>
+          </div>
         </li>
-        <li class="card">
-          <a href="./difference-engine/">
-            <img src="./thumbs/difference-engine.webp" width="800" height="500" alt="バベッジの階差機関の計算部。数字の輪が31段ずつ8列に並び、左の列で繰り上がりが下から光っている">
-            <div class="body">
-              <h3>バベッジの階差機関 No.2</h3>
-              <p>クランクを回すと、248個の数字の輪が足し算と繰り上げを本当に行って、多項式の表を1行ずつ出していきます。9から0へまたいだ桁の繰り上がりが、下から順に伝わるのが見えます。</p>
-              <ul class="tags"><li>スマホ可</li><li>音あり（最初はOFF）</li><li>日本語 / English</li></ul>
-            </div>
-          </a>
+        <li class="exhibit">
+          <a class="exhibit-img" href="./difference-engine/"><img src="./thumbs/difference-engine.webp" width="800" height="500" alt="バベッジの階差機関の計算部。数字の輪が31段ずつ8列に並び、左の列で繰り上がりが下から光っている"></a>
+          <div class="plate">
+            <p class="plate-no">1-03</p>
+            <h3><a href="./difference-engine/">バベッジの階差機関 No.2</a></h3>
+            <p class="subject">題材: 1846〜49年に設計された計算機（計算部の実機は1991年に完成）</p>
+            <p class="desc">クランクを回すと、248個の数字の輪が足し算と繰り上げを行って、多項式の表を1行ずつ出していきます。</p>
+            <ul class="tags"><li>スマホ可</li><li>音あり（最初はOFF）</li><li>日本語 / English</li></ul>
+            <div class="actions"><a class="open" href="./difference-engine/">展示を開く</a><button type="button" class="more" data-dialog="about-difference-engine">解説を読む</button></div>
+          </div>
         </li>
       </ul>
     </section>
   </main>
+
+  <dialog id="about-radial-9" class="about" aria-labelledby="about-radial-9-title">
+    <form method="dialog" class="close-row"><button class="close" aria-label="閉じる">閉じる</button></form>
+    <article>
+      <p class="plate-no">1-01</p>
+      <h2 id="about-radial-9-title">星型9気筒エンジンの断面</h2>
+      <p class="subject">題材: 航空機用の星型エンジン（R-975／R-985 級の配置を参考）</p>
+      <section>
+        <h3>背景</h3>
+        <p>シリンダーを星の形に並べた空冷エンジンは、1920〜40年代の飛行機で広く使われました。1927年にリンドバーグが大西洋を無着陸で横断した「スピリット・オブ・セントルイス号」も、ライト社の9気筒の星型エンジン（J-5C ワールウィンド）で飛んでいます。</p>
+        <p>9個のピストンは、クランク軸の1か所にまとめてつながっています。1本だけ太い「マスターロッド」がクランクにつながり、残り8本の「リンクロッド」はそのマスターロッドの根元にピンで留められています。</p>
+      </section>
+      <section>
+        <h3>見どころ</h3>
+        <ul>
+          <li>気筒の数が奇数なので、1つおきに点火していくと（1→3→5→7→9→2→4→6→8）、2回転で全部の気筒が等しい間隔で1回ずつ燃えます。</li>
+          <li>「マスターロッド」の視点にすると、8本のリンクロッドが1本のロッドの周りで首を振る様子が見えます。</li>
+          <li>カムの輪はクランクと逆向きに、1/8の速さで回ります。</li>
+        </ul>
+      </section>
+      <section class="model-note">
+        <h3>この模型について</h3>
+        <p>確かめたこと: ロッドのつながりを厳密に解いて、1°刻みの720角度すべてでピンの位置が計算と一致。</p>
+        <p>推定のところ: 点火は80°おきの公称値で、ロッドの形から決まる位置とは最大約2.75°ずれる。歯車の歯形と寸法は展示用の近似。</p>
+      </section>
+      <div class="sources"><p>出典</p><ul><li><a href="https://airandspace.si.edu/collection-objects/ryan-nyp-spirit-st-louis-charles-lindbergh/nasm_A19280021000">Smithsonian 国立航空宇宙博物館: Ryan NYP "Spirit of St. Louis"</a></li></ul></div>
+      <p><a class="open" href="./radial-9/">展示を開く</a></p>
+    </article>
+  </dialog>
+  <dialog id="about-grand-orrery" class="about" aria-labelledby="about-grand-orrery-title">
+    <form method="dialog" class="close-row"><button class="close" aria-label="閉じる">閉じる</button></form>
+    <article>
+      <p class="plate-no">1-02</p>
+      <h2 id="about-grand-orrery-title">真鍮の太陽系儀と渾天儀</h2>
+      <p class="subject">題材: 18〜19世紀の真鍮の科学機器</p>
+      <section>
+        <h3>背景</h3>
+        <p>太陽のまわりを惑星が回る様子を歯車で再現した模型は、英語で「オーラリー（orrery）」と呼ばれます。名前は、1710年代に作られた1台の持ち主、第4代オーラリー伯チャールズ・ボイルに由来します。この1台は器械職人ジョン・ローリーが作ったもので、もとになったのは時計職人ジョージ・グレアムとトマス・トンピオンの模型です。</p>
+        <p>まわりの輪は「渾天儀」です。赤道や黄道といった空の大きな円を、金属の輪で表しています。</p>
+      </section>
+      <section>
+        <h3>見どころ</h3>
+        <ul>
+          <li>地球が1回まわる間に、水星は約4回、土星はわずか1/30回ほどしか進みません。これを歯車の歯数の比だけで作っています。</li>
+          <li>台座を切ると、中の歯車列が見えます。惑星ごとに別の歯車の組がつながっています。</li>
+          <li>地球の地軸は、太陽のまわりを回っても同じ向きを保ちます。</li>
+        </ul>
+      </section>
+      <section class="model-note">
+        <h3>この模型について</h3>
+        <p>確かめたこと: 歯数の比から出る公転周期は、実際の値とのずれが最大0.049%（水星）。</p>
+        <p>推定のところ: 楕円軌道による速さの変化は再現していない。距離と天体の大きさは展示用の縮尺。</p>
+      </section>
+      <div class="sources"><p>出典</p><ul><li><a href="https://en.wikipedia.org/wiki/Orrery">Wikipedia: Orrery</a></li><li><a href="https://www.whipplemuseum.cam.ac.uk/node/57">Whipple Museum: The 'Grand' Orrery</a></li></ul></div>
+      <p><a class="open" href="./grand-orrery/">展示を開く</a></p>
+    </article>
+  </dialog>
+  <dialog id="about-difference-engine" class="about" aria-labelledby="about-difference-engine-title">
+    <form method="dialog" class="close-row"><button class="close" aria-label="閉じる">閉じる</button></form>
+    <article>
+      <p class="plate-no">1-03</p>
+      <h2 id="about-difference-engine-title">バベッジの階差機関 No.2</h2>
+      <p class="subject">題材: 1846〜49年に設計された計算機（計算部の実機は1991年に完成）</p>
+      <section>
+        <h3>背景</h3>
+        <p>19世紀、航海や測量に使う数表は人が手で計算していて、写し間違いや計算違いが残っていました。チャールズ・バベッジは、それを機械で計算して印刷までする仕組みを考えました。</p>
+        <p>No.2 は1846〜49年に設計されましたが、バベッジの生きている間には作られませんでした。ロンドンの科学博物館が設計図どおりに計算部を組み立てたのは、生誕200年にあたる1991年です。印刷部まで揃ったのは2002年でした。8,000個の部品からなり、重さは約5トンあります。</p>
+      </section>
+      <section>
+        <h3>見どころ</h3>
+        <ul>
+          <li>多項式の表は、足し算をくり返すだけで作れます（差分法）。この機械は掛け算をしません。</li>
+          <li>9から0へまたいだ桁には、まず警告が立ちます。そのあと、繰り上がりが下の桁から順に上へ伝わります。「繰り上げのデモ」では、30桁ぶん続けて伝わるのが見えます。</li>
+          <li>奇数番目の列と偶数番目の列は、交互に動きます。クランク4回転で表が1行進みます。</li>
+        </ul>
+      </section>
+      <section class="model-note">
+        <h3>この模型について</h3>
+        <p>確かめたこと: 別に書いた答え合わせのプログラムと、7つの例・134行ぶん全桁で一致。</p>
+        <p>推定のところ: 歯の形・レバー・寸法は推定。列が交互に動く順番は一次資料と照合していない。</p>
+      </section>
+      <div class="sources"><p>出典</p><ul><li><a href="https://www.computerhistory.org/babbage/">Computer History Museum: The Babbage Engine</a></li><li><a href="https://en.wikipedia.org/wiki/Difference_engine">Wikipedia: Difference engine</a></li></ul></div>
+      <p><a class="open" href="./difference-engine/">展示を開く</a></p>
+    </article>
+  </dialog>
 
   <footer class="foot">
     <p>どの作品も実験作です。公開した時点の版で固定していて、更新はしません。</p>
