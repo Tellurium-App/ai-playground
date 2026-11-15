@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#191c1a">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; style-src 'self' file:; img-src 'self' file: data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>二挺天符の和時計 | Double-foliot clock</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="vendor/three-studio.bundle.js"></script>
+  <script defer src="js/wadokei_engine.js"></script>
+  <script defer src="js/wadokei_builder.js"></script>
+  <script defer src="js/audio_engine.js"></script>
+  <script defer src="js/app.js"></script>
+  <link rel="stylesheet" href="../playground-back.css">
+</head>
+<body>
+  <a class="pg-back" href="../">遊び場に戻る</a>
+  <header class="header">
+    <div><p class="eyebrow" data-i18n="eyebrow">機械の展示室 / 1817</p><h1 data-i18n="title">二挺天符の和時計</h1></div>
+    <nav aria-label="Display settings"><button id="about" data-i18n="about">解説 / About</button><button id="audio" aria-pressed="false">音 OFF</button><button id="language" lang="en">English</button></nav>
+  </header>
+  <main class="layout">
+    <section class="exhibit" aria-label="3D clock exhibition">
+      <div class="stage" id="stage">
+        <div class="stage-heading"><span class="catalogue">01 / WADOKEI</span><span id="stageActive">昼用天符が稼働中</span></div>
+        <canvas id="scene" aria-label="回転・拡大できる二挺天符の櫓時計"></canvas>
+        <div class="stage-caption"><span id="viewCaption">欅の櫓台・重錘・二挺天符</span><small data-i18n="orbit">ドラッグで回転 · スマホは2本指</small></div>
+        <p id="renderError" class="render-error" hidden></p>
+      </div>
+      <div class="drive">
+        <p class="play-guide" id="guide" role="status">昼用天符がゆっくり振れています。次の六つで夜用に切り替わります。</p>
+        <div class="play-row"><button id="play" class="primary" aria-pressed="true">一時停止</button><label class="speed-label"><span data-i18n="speed">速さ</span><select id="speed"><option value="1" data-i18n="speed1">実時間（1秒=1秒）</option><option value="60" data-i18n="speed60">1秒=1分</option><option value="600" data-i18n="speed600">1秒=10分</option><option value="7200" data-i18n="speed7200">1秒=1刻</option></select></label><button id="observe" data-i18n="observe">実時間で天符を見る</button></div>
+        <div class="seek-row"><label for="theta" data-i18n="theta">通し刻 θ</label><input id="theta" type="number" min="0" max="36" step="any" value="0"><button id="seek" data-i18n="seek">指定した刻で停止</button><button id="nextSwitch" data-i18n="nextSwitch">次の六つ（天符切替）の直前へ</button></div>
+        <div class="view-row" role="group" aria-label="Camera presets"><button data-view="overview" aria-pressed="true" data-i18n="overview">全体</button><button data-view="switch" aria-pressed="false" data-i18n="switchView">天符の入れ替わり</button><button data-view="escapement" aria-pressed="false" data-i18n="escapement">ガンギ車と天符</button><button data-view="dial" aria-pressed="false" data-i18n="dial">文字盤</button></div>
+      </div>
+    </section>
+    <aside class="instrument-pane" id="instrumentPane">
+      <section class="paper time-panel">
+        <p class="eyebrow" data-i18n="comparison">時計と太陽の時刻対照</p>
+        <div class="time-pair"><div><h2 data-i18n="indicated">時計が指す時刻</h2><output id="clockName">明六つ</output><p id="clockProgress">0.0%</p><small>θ <span id="clockTheta">0.000000000</span></small></div><div><h2 data-i18n="trueTime">本当の不定時法</h2><output id="trueName">明六つ</output><p id="trueProgress">0.0%</p><small>θ <span id="trueTheta">0.000000000</span></small></div></div>
+        <output id="drift" class="drift">ずれ 0.000分</output><small id="errorSeconds">0.000 秒</small>
+        <button id="realign" data-i18n="realign">針を合わせ直す</button>
+        <p class="note" data-i18n="driftNote">溝は26段階。本当の時刻からのずれも、この時計の動きの一部です。</p>
+      </section>
+      <section class="panel conditions">
+        <h2><span class="section-no">01</span><span data-i18n="conditions">日付と土地</span></h2>
+        <label for="preset" data-i18n="preset">ケースプリセット</label><select id="preset"><option value="edo_geshi" data-i18n="edo_geshi">江戸・夏至 / 3日</option><option value="edo_toji" data-i18n="edo_toji">江戸・冬至 / 3日</option><option value="kyoto_shunbun" data-i18n="kyoto_shunbun">京都・春分前後 / 3日</option><option value="edo_sekki_cross" data-i18n="edo_sekki_cross">江戸・立冬の節気越え / 4日</option><option value="edo_two_weeks" data-i18n="edo_two_weeks">江戸・春の2週間</option><option value="nagasaki_aki" data-i18n="nagasaki_aki">長崎・秋分前後 / 3日</option></select>
+        <button id="compare" data-i18n="compare">夏至／冬至を比べて見る</button>
+        <p id="seasonCompare" class="season-compare">夏至：昼23溝 / 3.203秒　冬至：昼9溝 / 2.229秒</p>
+        <div class="form-grid"><label><span data-i18n="start">開始日</span><input type="date" id="start" min="1800-01-01" max="2100-12-31" value="2026-06-21"></label><label><span data-i18n="days">日数</span><input type="number" id="days" min="1" max="31" value="3"></label><label><span data-i18n="place">土地</span><select id="place"><option value="35.68" data-i18n="edo">江戸</option><option value="35.01" data-i18n="kyoto">京都</option><option value="32.75" data-i18n="nagasaki">長崎</option><option value="custom" data-i18n="custom">緯度を指定</option></select></label><label><span data-i18n="latitude">緯度（°）</span><input type="number" id="latitude" min="-89.99" max="89.99" step="0.01" value="35.68"></label></div>
+        <button id="apply" data-i18n="apply">この条件で明六つから開始</button><p id="validation" class="validation" role="alert" hidden></p><p id="precisionNote" class="note" hidden></p>
+      </section>
+      <section class="panel foliot-panel">
+        <h2><span class="section-no">02</span><span data-i18n="foliots">昼と夜、2本の天符</span></h2>
+        <p id="active" class="active-foliot">昼用</p>
+        <div class="foliot-card day"><h3 data-i18n="dayFoliot">昼用天符 / 分銅7g</h3><div><output id="dayGroove">23 溝</output><output id="dayDistance">45.16 mm</output></div><p><span data-i18n="period">全振動の周期</span><output id="dayPeriod">3.203 秒</output></p></div>
+        <div class="foliot-card night"><h3 data-i18n="nightFoliot">夜用天符 / 分銅4g</h3><div><output id="nightGroove">8 溝</output><output id="nightDistance">25.96 mm</output></div><p><span data-i18n="period">全振動の周期</span><output id="nightPeriod">1.686 秒</output></p></div>
+        <p class="note" id="phaseNote"></p>
+      </section>
+      <section class="panel calendar-panel">
+        <h2><span class="section-no">03</span><span data-i18n="solarDay">今日の昼と夜</span></h2><p id="currentDate"></p>
+        <dl class="readings"><div><dt data-i18n="dawn">明六つ</dt><dd id="ake"></dd></div><div><dt data-i18n="dusk">暮六つ</dt><dd id="kure"></dd></div><div><dt data-i18n="dayLength">昼の1刻</dt><dd id="dayKoku"></dd></div><div><dt data-i18n="nightLength">夜の1刻</dt><dd id="nightKoku"></dd></div><div><dt data-i18n="sekki">今の二十四節気</dt><dd id="sekki"></dd></div><div><dt data-i18n="setSekki">分銅を掛けた節気</dt><dd id="setSekki"></dd></div></dl><p class="note" data-i18n="solarNote">時刻は土地の視太陽時です。昼九つ（南中）が12時になります。</p>
+      </section>
+      <section class="panel display-panel">
+        <h2><span class="section-no">04</span><span data-i18n="inside">外装と輪列</span></h2><label for="mode" data-i18n="displayMode">表示モード</label><select id="mode"><option value="normal" data-i18n="normal">通常展示</option><option value="cut" data-i18n="cut">外装カット（断面）</option><option value="focus" data-i18n="focus">機構フォーカス</option></select>
+        <label class="range-label" for="explode"><span data-i18n="explode">分解率</span><output id="explodeValue">0%</output></label><input id="explode" type="range" min="0" max="100" value="0">
+        <h3 data-i18n="rotations">輪列の回転数</h3><dl class="readings rotations"><div><dt data-i18n="dialWheel">指針盤 / 72歯</dt><dd id="revDial"></dd></div><div><dt data-i18n="wheel1">1番車 / 64歯</dt><dd id="revWheel1"></dd></div><div><dt data-i18n="wheel2">2番車 / 72歯</dt><dd id="revWheel2"></dd></div><div><dt data-i18n="wheel3">3番車 / 66歯</dt><dd id="revWheel3"></dd></div><div><dt data-i18n="escapeWheel">冠形ガンギ車 / 15歯</dt><dd id="revEscape"></dd></div><div><dt data-i18n="yukiwa">雪輪 / 2回転・日</dt><dd id="revYukiwa"></dd></div><div><dt data-i18n="oscillations">天符の全振動回数</dt><dd id="osc"></dd></div></dl>
+      </section>
+      <footer><p data-i18n="footer">文化十四年製の数値と、一般形の切替機構を組み合わせた展示模型。</p><span>OFFLINE EXHIBITION · 1817</span></footer>
+    </aside>
+  </main>
+  <dialog id="aboutDialog" aria-labelledby="aboutTitle"><div class="dialog-heading"><h2 id="aboutTitle" data-i18n="aboutTitle">二挺天符と不定時法</h2><button id="closeAbout" data-i18n="close">閉じる</button></div>
+    <div data-lang="ja"><h3>昼夜をそれぞれ6つに分ける時計</h3><p>明六つから暮六つまでを6等分し、暮六つから翌朝の明六つまでも6等分します。明六つ・暮六つは太陽中心が地平線下7°21′41″になる時刻。昼と夜で1刻の長さが変わるため、2本の天符を六つの鐘で自動的に切り替えます。</p><p>雪輪は1日に2回転し、1つの突起が6歯の切替車を1日2回、60°ずつ送り、同軸で60°ずれた2枚の正三角カムが梃子板を動かします。停止側は持ち上げられて真っ直ぐに止まり、稼働側だけが振れます。</p><h3>1817年の時計と一般形を合わせた2台の混成モデル</h3><p>数値の土台は兼松正富作「文化十四年製」二挺天符櫓時計（1817年・岡田和夫蔵）です。佐々木勝浩・岡田和夫『国立科学博物館研究報告 E類』32巻（E32-01）の歯数・26本の溝・周期表を用いました。同時計の論文には昼夜切替機構の寸法がないため、形状は33巻（E33-02）p.10の一般形を借りています。</p><h3>推定を含む部分と時計のずれ</h3><p>文字盤は回転し、針は上部に固定しています。回転向き、細部寸法、天符の長さ、昼用7g分銅は推定を含みます。表8の1・13・26溝の周期を溝番号で折れ線補間し、節気入りの昼夜の長さに最も近い溝（同点なら小さい番号）を選ぶ規則も展示用の推定です。</p><p>分銅は時計が指す明六つで両方掛け直します。溝は26段階のため本当の時刻とずれます。「針を合わせ直す」は現在の日付の本当の明六つから回し直します。打方輪列は簡略化しています。重錘の巻き上げ動作は省略し、12刻ごとに上へ戻します。突起と6歯車の歯先の厳密な噛合い幾何は未復元で、機構の姿勢は計算した六つに同期します。</p><p>出典：佐々木勝浩・岡田和夫『国立科学博物館研究報告 E類』32巻（E32-01）・33巻（E33-02）、国立天文台 暦Wiki。時間軸は視太陽時。太陽位置は低精度式で求めます。</p></div>
+    <div data-lang="en" hidden><h3>Six hours of daylight, six hours of night</h3><p>Daylight from dawn to dusk and night from dusk to the following dawn are each divided into six hours. Dawn and dusk use the solar centre at 7°21′41″ below the horizon. Two foliots automatically exchange at each six-bell boundary. The snow wheel turns twice per day. Its single lug advances the six-tooth switch wheel by 60° twice per day. Two triangular cams, offset by 60°, lift the inactive foliot and release the other.</p><h3>A composite of two clocks</h3><p>The numerical basis is the double-foliot tower clock made by Kanematsu Masatomi in 1817, owned by Kazuo Okada, documented by Katsuhiro Sasaki and Kazuo Okada in Bulletin of the National Museum of Nature and Science, Series E, volume 32 (E32-01). Its paper provides no dimensions for the switching mechanism. The form is borrowed from the general mechanism in volume 33 (E33-02), page 10. This is a two-clock composite model.</p><h3>Inferences and accumulated error</h3><p>The dial rotates beneath a fixed upper pointer. Its rotation direction, detailed dimensions, foliot lengths and 7g daytime weights include inference. Periods are linearly interpolated by groove number between grooves 1, 13 and 26. Choosing the groove closest to the day length at a solar-term entry, with ties going to the smaller number, is an exhibition rule. Both weights are reset at the clock's own dawn.</p><p>There are only 26 grooves, so drift is expected. Realign restarts at true dawn on the current date. The striking train is simplified. Weight winding is omitted: the weight returns upward every 12 koku. Precise tooth-tip contact geometry between the single lug and the switch wheel is not reconstructed; the mechanism is synchronised to the calculated six-bell events. Time is local apparent solar time, with solar position from a low-precision formula. Sources: Sasaki and Okada, Series E volumes 32 (E32-01) and 33 (E33-02); National Astronomical Observatory calendar reference.</p></div>
+  </dialog>
+</body>
+</html>

@@ -25,7 +25,7 @@
     <nav class="guide" aria-labelledby="guide-title">
       <h2 id="guide-title">館内案内</h2>
       <ol class="rooms">
-        <li><a href="#room-1"><span class="room-no">第1室</span><span class="room-name">動く機械</span><span class="room-count">3点</span></a></li>
+        <li><a href="#room-1"><span class="room-no">第1室</span><span class="room-name">動く機械</span><span class="room-count">4点</span></a></li>
       </ol>
       <p class="guide-note">作品が増えたら部屋を足していきます。</p>
     </nav>
@@ -71,6 +71,17 @@
             <p class="desc">クランクを回すと、248個の数字の輪が足し算と繰り上げを行って、多項式の表を1行ずつ出していきます。</p>
             <ul class="tags"><li>スマホ可</li><li>音あり（最初はOFF）</li><li>日本語 / English</li></ul>
             <div class="actions"><a class="open" href="./difference-engine/">展示を開く</a><button type="button" class="more" data-dialog="about-difference-engine">解説を読む</button></div>
+          </div>
+        </li>
+        <li class="exhibit">
+          <a class="exhibit-img" href="./wadokei/"><img src="./thumbs/wadokei.webp" width="800" height="500" alt="江戸時代の櫓時計の上部。真鍮の柱の間に上下2本の黒い棒天符が渡され、手前に十二支の刻名を書いた文字盤が見える"></a>
+          <div class="plate">
+            <p class="plate-no">1-04</p>
+            <h3><a href="./wadokei/">二挺天符の和時計</a></h3>
+            <p class="subject">題材: 1817年製の二挺天符櫓時計（江戸時代の機械時計）</p>
+            <p class="desc">昼用と夜用の2本の天符が、明け六つと暮れ六つの鐘で自動的に入れ替わります。季節で長さの変わる江戸の時刻を、日付と土地を選んで刻めます。</p>
+            <ul class="tags"><li>スマホ可</li><li>音あり（最初はOFF）</li><li>日本語 / English</li></ul>
+            <div class="actions"><a class="open" href="./wadokei/">展示を開く</a><button type="button" class="more" data-dialog="about-wadokei">解説を読む</button></div>
           </div>
         </li>
       </ul>
@@ -159,6 +170,34 @@
       </section>
       <div class="sources"><p>出典</p><ul><li><a href="https://www.computerhistory.org/babbage/">Computer History Museum: The Babbage Engine</a></li><li><a href="https://en.wikipedia.org/wiki/Difference_engine">Wikipedia: Difference engine</a></li></ul></div>
       <p><a class="open" href="./difference-engine/">展示を開く</a></p>
+    </article>
+  </dialog>
+  <dialog id="about-wadokei" class="about" aria-labelledby="about-wadokei-title">
+    <form method="dialog" class="close-row"><button class="close" aria-label="閉じる">閉じる</button></form>
+    <article>
+      <p class="plate-no">1-04</p>
+      <h2 id="about-wadokei-title">二挺天符の和時計</h2>
+      <p class="subject">題材: 1817年製の二挺天符櫓時計（江戸時代の機械時計）</p>
+      <section>
+        <h3>背景</h3>
+        <p>江戸時代の時刻は、日の出前の「明け六つ」から日の入り後の「暮れ六つ」までの昼と、残りの夜を、それぞれ6つに分けて数えていました（不定時法）。夏は昼の一刻が長く、冬は短くなります。</p>
+        <p>ヨーロッパから伝わった機械時計は、一定の速さでしか進みません。そこで日本の時計師は、昼用と夜用の2本の天符（左右に振れて速さを決める棒）を用意し、明け六つと暮れ六つで自動的に切り替える仕組みを作りました。これが「二挺天符」です。天符の分銅を掛ける溝の位置を季節ごとに付け替えて、一刻の長さを合わせます。</p>
+      </section>
+      <section>
+        <h3>見どころ</h3>
+        <ul>
+          <li>「天符の入れ替わり」の視点で六つの鐘を待つと、雪輪の突起が切替車を60°送り、片方の天符が止まって、もう片方が振れ始めます。</li>
+          <li>天符の溝は26本です。日付を変えると、昼と夜の分銅が掛かる溝が変わります。江戸の昼の天符の周期は、夏至で約3.2秒、冬至で約2.2秒です。</li>
+          <li>溝は26段階しかないので、時計は本当の時刻から少しずつずれます。江戸の2週間では最大で約1時間半。右の対照表でずれが見え、「針を合わせ直す」で直せます。</li>
+        </ul>
+      </section>
+      <section class="model-note">
+        <h3>この模型について</h3>
+        <p>確かめたこと: 歯数・周期・切替の時刻を、別に書いた答え合わせのプログラムと、6つの例と無作為に選んだ40の条件で照合して一致。</p>
+        <p>推定のところ: 輪列と溝の数値は1817年の1台から、昼夜の切替機構の形は同じ研究者が紹介した一般形から借りた、2台を合わせた模型です。分銅の重さ・寸法・どの溝を選ぶかは推定。時刻は土地の視太陽時で、標準時とは違います。</p>
+      </section>
+      <div class="sources"><p>出典</p><ul><li><a href="https://www.kahaku.go.jp/albums/abm.php?d=1445&amp;f=abm00002827.pdf&amp;n=BNMNS_E3201.pdf">佐々木勝浩・岡田和夫『国立科学博物館研究報告 E類』32巻</a></li><li><a href="https://www.kahaku.go.jp/albums/abm.php?d=1444&amp;f=abm00002820.pdf">佐々木勝浩・岡田和夫『国立科学博物館研究報告 E類』33巻</a></li></ul></div>
+      <p><a class="open" href="./wadokei/">展示を開く</a></p>
     </article>
   </dialog>
 
