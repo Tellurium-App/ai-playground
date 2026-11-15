@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; style-src 'self' file:; img-src 'self' file: data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Difference Engine No.2 — Calculating section</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="vendor/three-studio.bundle.js"></script>
+  <script defer src="js/de2_engine.js"></script>
+  <script defer src="js/de2_builder.js"></script>
+  <script defer src="js/audio_engine.js"></script>
+  <script defer src="js/app.js"></script>
+  <link rel="stylesheet" href="../playground-back.css">
+</head>
+<body>
+  <a class="pg-back" href="../">遊び場に戻る</a>
+  <header class="masthead">
+    <div class="maker-mark" aria-hidden="true">D<span>E</span><small>№ 2</small></div>
+    <div class="heading"><p class="eyebrow" data-t="eyebrow"></p><h1 data-t="title"></h1></div>
+    <div class="header-actions"><button id="audio" type="button" aria-pressed="false"></button><button id="language" type="button">English</button></div>
+  </header>
+  <main>
+    <section class="exhibit" aria-label="3D">
+      <div id="stage" class="stage">
+        <div class="stage-note"><span data-t="modelNote"></span><span data-t="orbitHint"></span></div>
+        <div class="column-key"><span class="copper" data-t="evenKey"></span><span class="gold" data-t="oddKey"></span></div>
+        <div id="fallback" class="fallback" hidden><h2 data-t="fallbackTitle"></h2><p data-t="fallbackBody"></p></div>
+        <div class="stage-bottom"><span class="amber" data-t="warningKey"></span><span class="cyan" data-t="carryKey"></span><span id="renderInfo"></span></div>
+      </div>
+      <div class="phase-plate"><p class="cycle-caption" data-t="cycleSteps"></p><span id="phase"></span><strong id="phaseDetail"></strong><ol class="cycle-steps"><li data-cycle-step="0" data-t="stepAAdd"></li><li data-cycle-step="1" data-t="stepACarry"></li><li data-cycle-step="2" data-t="stepBAdd"></li><li data-cycle-step="3" data-t="stepBCarry"></li></ol><progress id="phaseProgress" max="1" value="0"></progress></div>
+      <p id="playGuide" class="play-guide"></p>
+      <section class="drive" aria-labelledby="driveTitle">
+        <div class="crank-block"><div id="crank" tabindex="0" role="slider" aria-valuemin="0" aria-valuenow="0"><div class="crank-rings"></div><div id="crankArm" class="crank-arm"><span></span></div><b aria-hidden="true">4:1</b></div><span id="crankCaption" data-t="crankHint"></span></div>
+        <div class="drive-controls"><div class="drive-heading"><h2 id="driveTitle" data-t="driveTitle"></h2><output id="turns"></output></div>
+          <div class="steps"><button type="button" data-step="-1">−1</button><button type="button" data-step="-0.25">−¼</button><button id="play" type="button"></button><button type="button" data-step="0.25">+¼</button><button type="button" data-step="1">+1</button></div>
+          <div class="drive-options"><label><span data-t="speed"></span><select id="speed"><option value="0.25">0.25</option><option value="0.5" selected>0.5</option><option value="1">1</option><option value="2">2</option><option value="4">4</option></select><span data-t="speedUnit"></span></label><button id="reset" class="boundary-control" type="button" data-t="reset"></button></div>
+          <div class="boundary-row"><span id="boundaryStatus"></span><button id="snap" type="button" data-t="snap"></button></div>
+        </div>
+      </section>
+    </section>
+    <aside id="instrumentPane" class="instruments">
+      <section class="print-panel"><p class="eyebrow" data-t="printEyebrow"></p><h2 data-t="printTitle"></h2><label data-t="currentLabel"></label><output id="currentValue" class="paper-number"></output><label data-t="printedLabel"></label><output id="printedValue" class="paper-number"></output><label data-t="theoryLabel"></label><output id="theoryValue" class="paper-number"></output><p id="matchStatus" role="status"></p><p id="formula"></p><p id="wrapStatus"></p></section>
+      <section class="settings"><h2 data-t="viewTitle"></h2><div class="mode-row"><button type="button" data-mode="exhibition" data-t="exhibition" aria-pressed="true"></button><button type="button" data-mode="cutaway" data-t="cutaway" aria-pressed="false"></button><button type="button" data-mode="focus" data-t="focus" aria-pressed="false"></button></div><label class="explode-label"><span data-t="explode"></span><output id="explodeValue">0%</output></label><input id="explode" type="range" min="0" max="100" value="0"><div class="camera-grid"><button data-camera="overview" data-t="overview" type="button" aria-pressed="true"></button><button data-camera="digits" data-t="digits" type="button" aria-pressed="false"></button><button data-camera="ripple" data-t="rippleView" type="button" aria-pressed="false"></button><button data-camera="gears" data-t="gearView" type="button" aria-pressed="false"></button></div></section>
+      <section class="column-panel"><h2 data-t="columnsTitle"></h2><p class="section-note" data-t="columnsNote"></p><div id="columns"></div></section>
+      <section class="input-panel"><h2 data-t="inputTitle"></h2><div class="edit-gate"><p id="inputLockStatus"></p><button id="stopToEdit" type="button" data-t="stopToEdit"></button></div><label for="preset" data-t="presetLabel"></label><select id="preset" class="boundary-control"><option value="prime_x2_x_41">x² + x + 41</option><option value="cubes">x³</option><option value="seventh_order" selected>3x⁷ − 5x⁵ + 2x³ − x + 7</option><option value="negative_slope">1,000,000 − 37x²</option></select><button id="ripple" type="button" class="boundary-control demo" data-t="rippleButton"></button><p id="inputMode"></p><form id="coefficientForm"><fieldset id="coefficients" class="boundary-control"><legend data-t="coefficientsTitle"></legend><div id="coefficientGrid" class="coefficient-grid"></div><label class="x-input">x₀<input id="x0" type="text" inputmode="numeric" value="0" autocomplete="off"></label><button type="submit" id="apply" data-t="apply"></button></fieldset></form><p class="section-note" data-t="inputNote"></p><p id="inputError" role="alert"></p></section>
+      <footer><p data-t="scopeNote"></p><p data-t="timingNote"></p><p data-t="keyboardNote"></p></footer>
+    </aside>
+  </main>
+</body>
+</html>
