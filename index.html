@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; connect-src https://cloudflareinsights.com">
   <title>AIの遊び場</title>
   <meta name="description" content="AIと一緒に作った模型や小さな作品を置いている、ブラウザの中の展示館です。">
   <meta property="og:title" content="AIの遊び場">
@@ -15,6 +15,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./home.css">
   <script defer src="./home.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "65a7846fb78a4f5c89d6ad1978378dd4"}'></script>
 </head>
 <body>
   <header class="top">
@@ -279,6 +280,7 @@
   <footer class="foot">
     <p>どの作品も実験作です。公開したときのまま置いていて、あとから直すことはしません。</p>
     <p>3D表示に <a href="https://threejs.org/">three.js</a>（MIT License）を使っています。ライセンス文は各作品の <code>vendor/LICENSE-three.txt</code> にあります。</p>
+    <p><a href="./privacy/">プライバシーポリシー</a></p>
   </footer>
 </body>
 </html>
