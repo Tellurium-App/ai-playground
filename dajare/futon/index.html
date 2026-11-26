@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>布団が吹っ飛んだ</title>
+<link rel="stylesheet" href="../common.css">
+<style>html, body { background: #8fd0ff; }</style>
+<link rel="stylesheet" href="../../playground-back.css">
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "65a7846fb78a4f5c89d6ad1978378dd4"}'></script>
+</head>
+<body>
+<a class="pg-back" href="../">ダジャレ一覧に戻る</a>
+<h1><span id="logo">布団が吹っ飛んだ</span><small>ドラッグで回せる</small></h1>
+<canvas id="c"></canvas>
+<div id="ui"><button id="sound" aria-pressed="false">♪ 音を出す</button></div>
+<script src="../vendor/three-studio.bundle.js"></script>
+<script src="../common.js"></script>
+<script>
+(() => {
+  const S = Dajare.boot({ bpm: 118, background: 0x8fd0ff, cam: { pos: [-1.7, 2.7, 5.6], target: [1.3, 1.55, -1.5], fov: 42 } });
+  const { T, scene, PI, clamp, smooth, lerp } = S;
+  // 8拍で一巡: 0〜2 寝ている / 2 吹っ飛ぶ / 4 空で光る / 6〜7 落ちてくる / 7 着地
+  const LOOP = 8, T_GO = 2, T_STAR = 4, T_DROP = 6, T_LAND = 7;
+  const std = (color, extra) => new T.MeshStandardMaterial({ color, flatShading: true, roughness: 0.85, ...extra });
+  const basic = color => new T.MeshBasicMaterial({ color });
+  const world = new T.Group(); scene.add(world); // 揺れは world ごと動かす
+  const box = (w, h, d, mat, x, y, z) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); world.add(m); return m; };
+
+  scene.add(new T.HemisphereLight(0xffffff, 0x8a7a5a, 1.6));
+  const key = new T.DirectionalLight(0xfff4e0, 1.9); key.position.set(-3, 6, 5); scene.add(key);
+
+  // ---------- 和室 ----------
+  box(16, 0.1, 12, std(0x3f5a2a), 0, -0.07, 0); // 畳のへり（すき間から見える色）
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++)
+    box(3.9, 0.1, 3.9, std((i + j) % 2 ? 0xc3cc86 : 0xb8c27a), -6 + i * 4, -0.05, -4 + j * 4);
+  const wallMat = std(0xe6d8b8), woodMat = std(0x5a3a22);
+  const WX0 = 1.4, WX1 = 5.2, WY0 = 1.2, WY1 = 4.4, WZ = -5; // 窓の開口
+  box(WX0 + 8, 7, 0.2, wallMat, (WX0 - 8) / 2, 3.5, WZ);
+  box(20 - WX1, 7, 0.2, wallMat, (WX1 + 20) / 2, 3.5, WZ);
+  box(WX1 - WX0, WY0, 0.2, wallMat, (WX0 + WX1) / 2, WY0 / 2, WZ);
+  box(WX1 - WX0, 7 - WY1, 0.2, wallMat, (WX0 + WX1) / 2, (7 + WY1) / 2, WZ);
+  for (const x of [WX0, WX1]) box(0.14, WY1 - WY0 + 0.14, 0.3, woodMat, x, (WY0 + WY1) / 2, WZ);
+  for (const y of [WY0, WY1]) box(WX1 - WX0 + 0.14, 0.14, 0.3, woodMat, (WX0 + WX1) / 2, y, WZ);
+  box(16, 0.3, 0.3, woodMat, 0, 5.6, WZ + 0.05);
+
+  // ---------- 寝ている人と敷き布団 ----------
+  box(2.4, 0.14, 1.25, std(0xffffff), 0.25, 0.07, 0);
+  box(0.5, 0.14, 0.62, std(0xa8d8ff), -0.72, 0.21, 0);
+  const person = new T.Group(); world.add(person);
+  const pajama = std(0x5b8fe0), pants = std(0x4a78c4), skin = std(0xffd9b3);
+  const torso = new T.Mesh(new T.BoxGeometry(0.78, 0.26, 0.46), pajama); torso.position.set(-0.04, 0.27, 0);
+  // 手足は伸ばしたまま動かさない（布団が飛んでも寝た姿勢のまま、目だけ開いて震える）
+  for (const s of [-1, 1]) {
+    const arm = new T.Group(); arm.position.set(-0.34, 0.27, s * 0.31);
+    const ag = new T.BoxGeometry(0.52, 0.13, 0.13); ag.translate(0.26, 0, 0);
+    const hand = new T.Mesh(new T.BoxGeometry(0.13, 0.11, 0.12), skin); hand.position.x = 0.58;
+    arm.add(new T.Mesh(ag, pajama), hand);
+    const leg = new T.Group(); leg.position.set(0.35, 0.25, s * 0.12);
+    const tg = new T.BoxGeometry(0.4, 0.17, 0.19); tg.translate(0.2, 0, 0);
+    const knee = new T.Group(); knee.position.x = 0.4;
+    const sg = new T.BoxGeometry(0.38, 0.15, 0.17); sg.translate(0.19, 0, 0);
+    const foot = new T.Mesh(new T.BoxGeometry(0.12, 0.22, 0.13), skin); foot.position.set(0.42, 0.04, 0);
+    knee.add(new T.Mesh(sg, pants), foot);
+    leg.add(new T.Mesh(tg, pants), knee);
+    person.add(arm, leg);
+  }
+  const head = new T.Group(); head.position.set(-0.7, 0.5, 0);
+  head.add(new T.Mesh(new T.IcosahedronGeometry(0.25, 1), std(0xffd9b3)));
+  const hair = new T.Mesh(new T.IcosahedronGeometry(0.26, 1), std(0x3a2a20)); hair.position.set(-0.08, -0.04, -0.03); head.add(hair);
+  // 顔は仰向け: 両目は体の幅の向き（z）に並び、口は足の側（+x）に来る。見えるようにカメラ側へ少しだけ傾ける
+  const face = new T.Group(); head.add(face);
+  face.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(new T.Vector3(0, 0, -1), new T.Vector3(-1, 0, 0), new T.Vector3(0, 1, 0)))
+    .premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), 0.5));
+  const eyes = [-1, 1].map(s => {
+    const shut = new T.Mesh(new T.BoxGeometry(0.11, 0.022, 0.02), basic(0x2a1a10)); shut.position.set(s * 0.1, 0.03, 0.25);
+    const open = new T.Mesh(new T.IcosahedronGeometry(0.06, 0), std(0xffffff)); open.position.set(s * 0.1, 0.03, 0.235);
+    const pupil = new T.Mesh(new T.IcosahedronGeometry(0.026, 0), basic(0x0a0a0a)); pupil.position.z = 0.05; open.add(pupil);
+    face.add(shut, open); return { shut, open };
+  });
+  const mouth = new T.Mesh(new T.CircleGeometry(0.04, 6), basic(0xc0504a)); mouth.position.set(0, -0.09, 0.245); face.add(mouth);
+  person.add(torso, head);
+
+  // ---------- 掛け布団（市松の板。寝ているときは体の形にふくらみ、飛ぶとはためく） ----------
+  const QX = 6, QZ = 5, QL = 1.95, QW = 1.45, REST = new T.Vector3(0.42, 0.15, 0);
+  const TRI = QX * QZ * 2, pos = new Float32Array(TRI * 9), col = new Float32Array(TRI * 9), order = [];
+  const gi = (i, j) => j * (QX + 1) + i, cPink = new T.Color(0xff8fae), cCream = new T.Color(0xfff1df);
+  for (let j = 0; j < QZ; j++) for (let i = 0; i < QX; i++) {
+    const a = gi(i, j), b = gi(i + 1, j), c = gi(i + 1, j + 1), d = gi(i, j + 1), t0 = order.length;
+    order.push(a, d, c, a, c, b);
+    for (let k = 0; k < 6; k++) ((i + j) % 2 ? cPink : cCream).toArray(col, (t0 + k) * 3);
+  }
+  const qGeo = new T.BufferGeometry();
+  qGeo.setAttribute('position', new T.BufferAttribute(pos, 3));
+  qGeo.setAttribute('color', new T.BufferAttribute(col, 3));
+  const quilt = new T.Mesh(qGeo, std(0xffffff, { vertexColors: true, side: T.DoubleSide }));
+  quilt.frustumCulled = false; world.add(quilt);
+  const grid = new Float32Array((QX + 1) * (QZ + 1) * 3);
+  function shapeQuilt(f, ph, amp) { // f: 0 = 寝ている形、1 = はためく形
+    for (let j = 0; j <= QZ; j++) for (let i = 0; i <= QX; i++) {
+      const x = (i / QX - 0.5) * QL, z = (j / QZ - 0.5) * QW, n = gi(i, j) * 3;
+      const lying = 0.02 + 0.31 * amp * Math.exp(-Math.pow(z / 0.5, 4)); // 体の幅ぶんは平らに盛り上がる
+      const flap = 0.18 * Math.sin(x * 3 + ph) + 0.12 * Math.sin(z * 4 + ph * 1.3);
+      grid[n] = x; grid[n + 1] = lerp(lying, flap, f); grid[n + 2] = z;
+    }
+    order.forEach((g, t) => { pos[t * 3] = grid[g * 3]; pos[t * 3 + 1] = grid[g * 3 + 1]; pos[t * 3 + 2] = grid[g * 3 + 2]; });
+    qGeo.attributes.position.needsUpdate = true; qGeo.computeVertexNormals();
+  }
+  // 飛ぶ道すじ: 0.5拍で窓を抜け、そのまま空の奥へ
+  const P_UP = new T.Vector3(0.6, 3.0, -1.2), P_WIN = new T.Vector3((WX0 + WX1) / 2, 2.9, WZ), P_FAR = new T.Vector3(19, 5.2, -40);
+  const va = new T.Vector3(), vb = new T.Vector3();
+  function flight(t, out) {
+    if (t < 0.5) { const s = t / 0.5; va.lerpVectors(REST, P_UP, s); vb.lerpVectors(P_UP, P_WIN, s); return out.lerpVectors(va, vb, s); }
+    return out.lerpVectors(P_WIN, P_FAR, clamp((t - 0.5) / 1.5));
+  }
+  const star = new T.Group(); // 空で光る
+  for (const r of [0, PI / 2]) { const m = new T.Mesh(new T.OctahedronGeometry(1), new T.MeshBasicMaterial({ color: 0xffffff }));
+    m.scale.set(1, 0.16, 0.16); m.rotation.z = r; star.add(m); }
+  star.position.copy(P_FAR); world.add(star);
+  const winds = Array.from({ length: 9 }, (_, i) => { // 風の線
+    const m = new T.Mesh(new T.BoxGeometry(1.6, 0.03, 0.03), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 }));
+    world.add(m); return { m, y: 0.5 + (i * 0.37) % 2.2, z: -1.5 + (i * 0.61) % 3, d: (i * 0.13) % 0.5 };
+  });
+  const puffs = Array.from({ length: 7 }, (_, i) => { const m = new T.Mesh(new T.IcosahedronGeometry(0.22, 0), std(0xffffff)); world.add(m); return { m, a: i / 7 * PI * 2 }; });
+
+  function draw(b) {
+    const bl = ((b % LOOP) + LOOP) % LOOP;
+    // 掛け布団
+    quilt.visible = true; quilt.rotation.set(0, 0, 0);
+    if (bl < T_GO) {
+      const tremble = smooth((bl - 1.5) / 0.5) * 0.03 * Math.sin(b * 50);
+      quilt.position.copy(REST); quilt.position.y += Math.abs(tremble);
+      shapeQuilt(0, 0, 1 + 0.07 * Math.sin(b * PI));
+    } else if (bl < T_DROP) {
+      const t = bl - T_GO;
+      flight(t, quilt.position);
+      quilt.rotation.set(t * 8, t * 4.5, t * 6.5);
+      shapeQuilt(smooth(t / 0.15), b * 14, 1);
+      quilt.visible = t < 2.0;
+    } else {
+      const u = clamp((bl - T_DROP) / (T_LAND - T_DROP)), settle = bl - T_LAND;
+      quilt.position.copy(REST); quilt.position.y += 5 * (1 - u * u);
+      quilt.rotation.z = 0.5 * Math.sin(u * 7) * (1 - u);
+      shapeQuilt((1 - u) * 0.9, b * 10, settle > 0 ? 1 + 0.5 * Math.exp(-settle * 6) * Math.cos(settle * 14) : 1);
+    }
+    // 取り残された人
+    const awake = smooth((bl - T_GO) / 0.15) - smooth((bl - T_LAND - 0.1) / 0.4);
+    const shiver = awake * 0.018 * Math.sin(b * 44), sneeze = Math.max(0, 1 - Math.abs(bl - 5.1) / 0.25);
+    person.position.set(shiver, 0, shiver * 0.6);
+    head.position.y = 0.5 + 0.12 * sneeze; head.rotation.z = -0.25 * sneeze;
+    for (const e of eyes) { e.open.scale.setScalar(awake * 1.25 + 0.001); e.shut.visible = awake < 0.5; }
+    mouth.scale.setScalar(1 + 0.9 * awake + 1.2 * sneeze);
+    // 風・星・土ぼこり・揺れ
+    for (const w of winds) {
+      const t = bl - 1.85 - w.d; w.m.visible = t > 0 && t < 0.6;
+      w.m.position.set(-5 + t * 18, w.y + t * 2.2, w.z - t * 5); w.m.rotation.set(0, 0.27, 0.12);
+    }
+    const tw = (bl - T_STAR) / 0.7; star.visible = tw > 0 && tw < 1;
+    star.scale.setScalar(3.2 * Math.sin(PI * clamp(tw)) + 0.001); star.rotation.z = tw * 1.5;
+    const d = bl - T_LAND;
+    for (const p of puffs) {
+      const u = clamp(d / 0.8); p.m.visible = d > 0 && u < 1;
+      p.m.position.set(0.4 + Math.cos(p.a) * (1.0 + 0.8 * u), 0.2 + 0.5 * u, Math.sin(p.a) * (0.7 + 0.6 * u));
+      p.m.scale.setScalar(Math.sin(PI * u) * 1.1 + 0.001);
+    }
+    const k1 = bl - T_GO, k2 = d;
+    world.position.y = (k1 > 0 && k1 < 0.8 ? 0.07 * Math.sin(k1 * 45) * Math.exp(-k1 * 7) : 0) + (k2 > 0 && k2 < 0.8 ? 0.06 * Math.sin(k2 * 40) * Math.exp(-k2 * 7) : 0);
+  }
+
+  function playStep(step, t, A) {
+    const beat = (step >> 1) % LOOP, on = step % 2 === 0, bs = A.beatSec;
+    if (!on) { A.tone(t, 'square', 900, 880, 0.05, 0.03); return; }
+    if (beat < 2) A.tone(t, 'sine', 120, 85, 0.25, 0.5);                                      // 寝息
+    else if (beat === 2) { A.noise(t, 'bandpass', 900, 1.0, 0.6); A.tone(t, 'sine', 250, 2200, 0.35, 0.4); A.tone(t, 'sine', 140, 40, 0.9, 0.3); } // 吹っ飛ぶ
+    else if (beat === 4) { A.tone(t, 'triangle', 2093, 2093, 0.25, 0.5); A.tone(t + 0.08, 'triangle', 3136, 3136, 0.2, 0.5); }                    // きらーん
+    else if (beat === 5) A.noise(t + 0.1 * bs, 'highpass', 2500, 0.45, 0.14);                 // くしゅん
+    else if (beat === 6) A.tone(t, 'sine', 1300, 260, 0.28, 1.0 * bs, 0.8 * bs);              // 落ちてくる
+    else if (beat === 7) { A.tone(t, 'sine', 100, 35, 1.0, 0.4); A.noise(t, 'lowpass', 350, 0.6, 0.25); } // ぼふっ
+  }
+  S.start({ draw, playStep });
+})();
+</script>
+</body>
+</html>

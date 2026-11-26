@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ノリノリな海苔</title>
+<link rel="stylesheet" href="../common.css">
+<style>html, body { background: #150d2a; }</style>
+<link rel="stylesheet" href="../../playground-back.css">
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "65a7846fb78a4f5c89d6ad1978378dd4"}'></script>
+</head>
+<body>
+<a class="pg-back" href="../">ダジャレ一覧に戻る</a>
+<h1><span id="logo">ノリノリな海苔</span><small>ドラッグで回せる</small></h1>
+<canvas id="c"></canvas>
+<div id="ui">
+  <button id="sound" aria-pressed="false">♪ 音を出す</button>
+  <label>ノリ具合 <input id="groove" type="range" min="0" max="1.6" step="0.01" value="1"></label>
+</div>
+<script src="../vendor/three-studio.bundle.js"></script>
+<script src="../common.js"></script>
+<script>
+(() => {
+  const S = Dajare.boot({ bpm: 118, background: 0x150d2a, fog: [11, 24], cam: { pos: [1.6, 2.5, 8.2], target: [0, 1.55, 0] } });
+  const { T, scene, rand, PI } = S;
+  const BPM = 118, groove = document.getElementById('groove');
+
+  scene.add(new T.HemisphereLight(0xcfd8ff, 0x2a1840, 1.3));
+  const key = new T.DirectionalLight(0xffffff, 2.2);
+  key.position.set(2.5, 5, 5);
+  scene.add(key);
+  const spotA = new T.PointLight(0xff3fa0, 60); // 回る色つきの明かり
+  const spotB = new T.PointLight(0x37d5ff, 60);
+  scene.add(spotA, spotB);
+
+  // ---------- 床（光るタイル） ----------
+  const TILE_N = 10, TILE = 0.9;
+  const tiles = new T.InstancedMesh(
+    new T.BoxGeometry(TILE * 0.94, 0.1, TILE * 0.94),
+    new T.MeshBasicMaterial(), TILE_N * TILE_N);
+  const dummy = new T.Object3D();
+  for (let i = 0; i < TILE_N; i++) for (let j = 0; j < TILE_N; j++) {
+    dummy.position.set((i - TILE_N / 2 + 0.5) * TILE, -0.05, (j - TILE_N / 2 + 0.5) * TILE);
+    dummy.updateMatrix();
+    tiles.setMatrixAt(i * TILE_N + j, dummy.matrix);
+  }
+  scene.add(tiles);
+  const tmpColor = new T.Color();
+  function updateTiles(b) {
+    const step = Math.floor(b), decay = 1 - 0.55 * (b - step);
+    for (let i = 0; i < TILE_N; i++) for (let j = 0; j < TILE_N; j++) {
+      const on = (i + j + step) % 2 === 0;
+      const hue = (i * 0.07 + j * 0.11 + step * 0.13) % 1;
+      tmpColor.setHSL(hue, 0.8, on ? 0.2 + 0.36 * decay : 0.07);
+      tiles.setColorAt(i * TILE_N + j, tmpColor);
+    }
+    tiles.instanceColor.needsUpdate = true;
+  }
+
+  // ---------- 海苔の本体 ----------
+  // 全形の海苔は 21cm × 19cm。縦長に立たせる。
+  const W = 1.9, H = 2.1, NX = 5, NY = 7;
+  const noriMat = new T.MeshStandardMaterial({
+    vertexColors: true, flatShading: true, side: T.DoubleSide, roughness: 0.42, metalness: 0.25 });
+  const limbMat = new T.MeshStandardMaterial({ color: 0x1d2c1c, flatShading: true, roughness: 0.5, metalness: 0.2 });
+
+  // 格子点ごとの固定のゆがみ（ぱりっとした折れと、ふちのがたつき）
+  const jitter = [];
+  for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+    const edge = i === 0 || i === NX || j === 0 || j === NY;
+    jitter.push((rand() - 0.5) * (edge ? 0.07 : 0.04), (rand() - 0.5) * (edge ? 0.07 : 0.04), (rand() - 0.5) * 0.09);
+  }
+  const TRI = NX * NY * 2;
+  const pos = new Float32Array(TRI * 9), col = new Float32Array(TRI * 9);
+  const order = []; // 三角形ごとの格子点の番号
+  const gi = (i, j) => j * (NX + 1) + i;
+  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+    const a = gi(i, j), b = gi(i + 1, j), c = gi(i + 1, j + 1), d = gi(i, j + 1);
+    if ((i + j) % 2) order.push(a, b, c, a, c, d); else order.push(a, b, d, b, c, d);
+  }
+  const dark = new T.Color(0x0c1f12), light = new T.Color(0x1f4a28);
+  for (let t = 0; t < TRI; t++) {
+    tmpColor.copy(dark).lerp(light, rand());
+    for (let k = 0; k < 3; k++) tmpColor.toArray(col, t * 9 + k * 3);
+  }
+  const bodyGeo = new T.BufferGeometry();
+  bodyGeo.setAttribute('position', new T.BufferAttribute(pos, 3));
+  bodyGeo.setAttribute('color', new T.BufferAttribute(col, 3));
+  const body = new T.Mesh(bodyGeo, noriMat);
+  body.frustumCulled = false;
+  const dancer = new T.Group();
+  dancer.add(body);
+  scene.add(dancer);
+
+  // 海苔の面の式。u は左右 -1〜1、v は下から上 0〜1。b は拍、k はノリ具合。
+  function surf(u, v, b, k, out) {
+    const sway = Math.sin(b * PI), sq = Math.cos(b * 2 * PI);
+    const x = u * W / 2 * (1 + 0.04 * k * sq * (1 - v))
+      + k * 0.5 * sway * Math.pow(v, 1.4) + k * 0.1 * Math.sin(v * 4 - b * PI * 2) * v;
+    const y = v * H * (1 - 0.06 * k * sq) - k * 0.12 * sway * sway * v * v;
+    const z = k * 0.16 * Math.sin(v * 3.2 - b * PI * 2) * (0.3 + v)
+      + k * 0.14 * u * u * Math.sin(b * PI + v * 2) + k * 0.1 * u * sway * v;
+    return out.set(x, y, z);
+  }
+  const grid = new Float32Array((NX + 1) * (NY + 1) * 3);
+  const v3 = new T.Vector3();
+  function updateBody(b, k) {
+    for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+      const n = gi(i, j) * 3;
+      surf(i / NX * 2 - 1, j / NY, b, k, v3);
+      grid[n] = v3.x + jitter[n]; grid[n + 1] = v3.y + jitter[n + 1]; grid[n + 2] = v3.z + jitter[n + 2];
+    }
+    for (let t = 0; t < order.length; t++) {
+      const n = order[t] * 3;
+      pos[t * 3] = grid[n]; pos[t * 3 + 1] = grid[n + 1]; pos[t * 3 + 2] = grid[n + 2];
+    }
+    bodyGeo.attributes.position.needsUpdate = true;
+    bodyGeo.computeVertexNormals();
+  }
+
+  // ---------- 顔 ----------
+  const face = new T.Group();
+  body.add(face);
+  const white = new T.MeshStandardMaterial({ color: 0xffffff, flatShading: true, roughness: 0.6 });
+  const black = new T.MeshBasicMaterial({ color: 0x0a0a0a });
+  const eyes = [], pupils = [];
+  for (const s of [-1, 1]) {
+    const eye = new T.Mesh(new T.IcosahedronGeometry(0.17, 0), white);
+    eye.position.set(s * 0.36, 0.2, 0.05); eye.scale.z = 0.35;
+    const pupil = new T.Mesh(new T.IcosahedronGeometry(0.08, 0), black);
+    pupil.position.set(0, 0, 0.16);
+    eye.add(pupil); face.add(eye); eyes.push(eye); pupils.push(pupil);
+    const cheek = new T.Mesh(new T.CircleGeometry(0.1, 6), new T.MeshBasicMaterial({ color: 0xff7d9c }));
+    cheek.position.set(s * 0.58, -0.08, 0.04);
+    face.add(cheek);
+  }
+  const mouth = new T.Mesh(new T.CircleGeometry(0.2, 6, PI, PI),
+    new T.MeshBasicMaterial({ color: 0xff4f6a, side: T.DoubleSide }));
+  mouth.position.set(0, -0.06, 0.05);
+  face.add(mouth);
+  const fx = new T.Vector3(), fy = new T.Vector3(), fz = new T.Vector3(), fp = new T.Vector3(), basis = new T.Matrix4();
+  function updateFace(b, k) {
+    const v0 = 0.62;
+    surf(0.15, v0, b, k, fx).sub(surf(-0.15, v0, b, k, v3)).normalize();
+    surf(0, v0 + 0.06, b, k, fy).sub(surf(0, v0 - 0.06, b, k, v3)).normalize();
+    fz.crossVectors(fx, fy).normalize(); fy.crossVectors(fz, fx);
+    face.quaternion.setFromRotationMatrix(basis.makeBasis(fx, fy, fz));
+    face.position.copy(surf(0, v0, b, k, fp));
+    const blink = (b % 4) > 3.8 ? 0.12 : 1; // 4拍に1回まばたき
+    for (const e of eyes) e.scale.y = blink;
+    for (const p of pupils) p.position.x = 0.04 * Math.sin(b * PI);
+    mouth.scale.y = 0.55 + 0.45 * Math.max(0, Math.cos(b * 2 * PI)) * Math.min(1, k + 0.3);
+  }
+
+  // ---------- 腕（細切りの海苔） ----------
+  const arms = [-1, 1].map(s => {
+    const shoulder = new T.Group();
+    const upperGeo = new T.BoxGeometry(0.45, 0.13, 0.03); upperGeo.translate(0.225, 0, 0);
+    const foreGeo = new T.BoxGeometry(0.42, 0.11, 0.03); foreGeo.translate(0.21, 0, 0);
+    const elbow = new T.Group(); elbow.position.x = 0.45;
+    const hand = new T.Mesh(new T.IcosahedronGeometry(0.1, 0), limbMat);
+    hand.position.x = 0.46; hand.scale.z = 0.5;
+    elbow.add(new T.Mesh(foreGeo, limbMat), hand);
+    shoulder.add(new T.Mesh(upperGeo, limbMat), elbow);
+    body.add(shoulder);
+    return { s, shoulder, elbow };
+  });
+  function updateArms(b, k) {
+    const sway = Math.sin(b * PI);
+    for (const a of arms) {
+      a.shoulder.position.copy(surf(a.s, 0.56, b, k, v3));
+      // 傾いた側の腕を上へ突き上げ、反対は腰のあたりで小さく振る
+      const up = Math.max(0, a.s * sway);
+      const ang = -0.5 + 1.75 * up * Math.min(1, k) + 0.18 * k * Math.sin(b * 2 * PI);
+      const bend = 0.5 - 0.4 * up + 0.3 * k * Math.sin(b * 4 * PI) * (1 - up);
+      a.shoulder.rotation.z = a.s > 0 ? ang : PI - ang;
+      a.elbow.rotation.z = a.s > 0 ? bend : -bend;
+    }
+  }
+
+  // ---------- 脚 ----------
+  const legs = [-1, 1].map(s => {
+    const geo = new T.BoxGeometry(0.1, 1, 0.03); geo.translate(0, -0.5, 0);
+    const leg = new T.Mesh(geo, limbMat);
+    const foot = new T.Mesh(new T.BoxGeometry(0.24, 0.09, 0.34), limbMat);
+    dancer.add(leg, foot);
+    return { s, leg, foot };
+  });
+  function updateLegs(b, k, baseY) {
+    const sway = Math.sin(b * PI);
+    for (const l of legs) {
+      surf(l.s * 0.5, 0, b, k, v3); v3.y += baseY;
+      const lift = 0.22 * k * Math.pow(Math.max(0, -l.s * sway), 2); // 体重の乗っていない足を上げる
+      const fxp = l.s * 0.5 + 0.08 * k * sway, fyp = 0.045 + lift;
+      l.foot.position.set(fxp, fyp, v3.z + 0.07);
+      l.foot.rotation.x = -lift * 1.5;
+      l.leg.position.copy(v3);
+      const dx = fxp - v3.x, dy = fyp + 0.04 - v3.y;
+      l.leg.scale.y = Math.hypot(dx, dy);
+      l.leg.rotation.z = Math.atan2(dx, -dy);
+    }
+  }
+
+  // ---------- 観客のおにぎり ----------
+  const riceMat = new T.MeshStandardMaterial({ color: 0xfbf7ee, flatShading: true, roughness: 0.9 });
+  const onigiri = [[-2.7, -0.3], [2.7, -0.3], [-1.8, -2.1], [1.8, -2.1], [0, -2.9]].map(([x, z], i) => {
+    const g = new T.Group();
+    const riceGeo = new T.CylinderGeometry(0.5, 0.5, 0.34, 3); riceGeo.rotateX(-PI / 2);
+    const rice = new T.Mesh(riceGeo, riceMat); rice.position.y = 0.27;
+    const band = new T.Mesh(new T.BoxGeometry(0.36, 0.3, 0.38), limbMat); band.position.y = 0.14;
+    g.add(rice, band);
+    for (const s of [-1, 1]) {
+      const e = new T.Mesh(new T.IcosahedronGeometry(0.04, 0), black);
+      e.position.set(s * 0.11, 0.42, 0.18); g.add(e);
+    }
+    g.position.set(x, 0, z);
+    g.rotation.y = Math.atan2(-x, 4 - z) * 0.6;
+    scene.add(g);
+    return { g, i };
+  });
+
+  // ---------- 降ってくるきざみ海苔 ----------
+  const FLAKES = 70;
+  const flakes = new T.InstancedMesh(new T.BoxGeometry(0.24, 0.012, 0.035), limbMat, FLAKES);
+  const flakeSeed = Array.from({ length: FLAKES }, () => [rand(), rand(), rand(), rand()]);
+  scene.add(flakes);
+  function updateFlakes(sec) {
+    for (let n = 0; n < FLAKES; n++) {
+      const [a, b2, c, d] = flakeSeed[n];
+      const fall = (sec * (0.35 + 0.3 * d) + c * 7) % 7;
+      dummy.position.set((a - 0.5) * 8 + Math.sin(sec + n) * 0.2, 6.5 - fall, (b2 - 0.5) * 7 - 0.5);
+      dummy.rotation.set(sec * (1 + d) + n, sec * 0.7 + n * 2, n);
+      dummy.updateMatrix();
+      flakes.setMatrixAt(n, dummy.matrix);
+    }
+    flakes.instanceMatrix.needsUpdate = true;
+  }
+
+  function draw(b) {
+    const k = parseFloat(groove.value), sec = b * 60 / BPM;
+    const baseY = 0.6 + 0.07 * k * (1 - Math.cos(b * 2 * PI));
+    body.position.y = baseY;
+    dancer.rotation.y = 0.3 * k * Math.sin(b * PI / 2);
+    updateBody(b, k); updateFace(b, k); updateArms(b, k); updateLegs(b, k, baseY);
+    updateTiles(b); updateFlakes(sec);
+    for (const o of onigiri) {
+      o.g.position.y = 0.16 * Math.abs(Math.sin((b + 0.5 + o.i * 0.13) * PI));
+      o.g.rotation.z = 0.16 * Math.sin(b * PI + o.i * 1.7);
+    }
+    spotA.position.set(Math.cos(sec * 0.9) * 3.2, 3.2, Math.sin(sec * 0.9) * 3.2 + 1.5);
+    spotB.position.set(Math.cos(sec * 0.9 + PI) * 3.2, 3.2, Math.sin(sec * 0.9 + PI) * 3.2 + 1.5);
+  }
+
+  const BASS = [55, 55, 65.41, 73.42];
+  function playStep(step, t, A) { // step は8分音符の番号
+    const beat = step >> 1;
+    if (step % 2 === 0) {
+      A.tone(t, 'sine', 150, 45, 0.9, 0.22);
+      if (beat % 2 === 1) A.noise(t, 'bandpass', 1800, 0.5, 0.14);
+    } else {
+      A.noise(t, 'highpass', 7000, 0.22, 0.05);
+      const f = BASS[(beat >> 2) % 4] * (beat % 4 === 3 ? 1.5 : 1);
+      A.tone(t, 'sawtooth', f, f, 0.2, 0.2);
+    }
+  }
+
+  S.start({ draw, playStep, captureCamera(b, camera) { // 32拍で1往復、ゆっくり左右に回り込む
+    const a = 0.2 + 0.5 * Math.sin(b * PI / 16), r = 6.9 - 0.5 * Math.cos(b * PI / 8);
+    camera.position.set(Math.sin(a) * r, 2.0, Math.cos(a) * r);
+  } });
+})();
+</script>
+</body>
+</html>

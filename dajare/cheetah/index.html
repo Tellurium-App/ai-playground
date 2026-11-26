@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>チーターが穴に落っこちーたー</title>
+<link rel="stylesheet" href="../common.css">
+<style>html, body { background: #ffc27a; } h1 { font-size: 15px; } .capture h1 { font-size: 58px; top: 34px; }</style>
+<link rel="stylesheet" href="../../playground-back.css">
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "65a7846fb78a4f5c89d6ad1978378dd4"}'></script>
+</head>
+<body>
+<a class="pg-back" href="../">ダジャレ一覧に戻る</a>
+<h1><span id="logo">チーターが穴に落っこちーたー</span><small>ドラッグで回せる</small></h1>
+<canvas id="c"></canvas>
+<div id="ui"><button id="sound" aria-pressed="false">♪ 音を出す</button></div>
+<script src="../vendor/three-studio.bundle.js"></script>
+<script src="../common.js"></script>
+<script>
+(() => {
+  const S = Dajare.boot({ bpm: 118, background: 0xffc27a, fog: [20, 52], cam: { pos: [3.2, 2.6, 8.6], target: [0, 0.9, 0] } });
+  const { T, scene, rand, PI, clamp, smooth, outCubic, lerp } = S;
+  const BS = 60 / 118;
+  // 16拍で一巡: 0〜10 走る / 10〜11.4 宙で気づく / 11.4〜13 落ちる / 13〜16 次のチーターが穴を跳び越えて来る
+  const LOOP = 16, T_EDGE = 10, T_FALL = 11.4, T_NEXT = 13, SPEED = 5, LAP = 62; // LAP は一巡で流れる地面の長さ
+  const std = (color, extra) => new T.MeshStandardMaterial({ color, flatShading: true, roughness: 0.8, ...extra });
+  const basic = color => new T.MeshBasicMaterial({ color });
+  const world = new T.Group(); scene.add(world); // 着地の揺れは world ごと動かす
+
+  scene.add(new T.HemisphereLight(0xfff2d0, 0x9a6a30, 1.7));
+  const key = new T.DirectionalLight(0xfff0d8, 2.0); key.position.set(-3, 6, 5); scene.add(key);
+  const sun = new T.Mesh(new T.CircleGeometry(4, 10), new T.MeshBasicMaterial({ color: 0xfff3c0, fog: false }));
+  sun.position.set(-20, 7, -60); scene.add(sun);
+
+  // ---------- 流れる地面 ----------
+  const NT = 44;
+  const tiles = new T.InstancedMesh(new T.BoxGeometry(1, 0.4, 70), basic(0xffffff), NT);
+  world.add(tiles);
+  const cA = new T.Color(0xdca545), cB = new T.Color(0xcf9638), dummy = new T.Object3D();
+  const wrap = x => ((x + LAP / 2) % LAP + LAP) % LAP - LAP / 2;
+  const props = [];
+  const prop = (obj, z) => { obj.position.z = z; world.add(obj); props.push({ obj, xw: rand() * LAP }); };
+  for (let i = 0; i < 8; i++) { // アカシア
+    const g = new T.Group(), k = 0.8 + rand() * 0.7;
+    const trunk = new T.Mesh(new T.CylinderGeometry(0.1, 0.18, 2.4, 5), std(0x6b4526)); trunk.position.y = 1.2;
+    const c1 = new T.Mesh(new T.ConeGeometry(1.7, 0.55, 6), std(0x7a9a35)); c1.position.y = 2.6;
+    const c2 = new T.Mesh(new T.ConeGeometry(1.0, 0.45, 6), std(0x8aab3e)); c2.position.set(0.3, 2.95, 0);
+    g.add(trunk, c1, c2); g.scale.setScalar(k);
+    prop(g, -3.5 - rand() * 14);
+  }
+  for (let i = 0; i < 16; i++) { // 岩と草
+    const rock = i % 2 === 0;
+    const m = new T.Mesh(rock ? new T.IcosahedronGeometry(0.25 + rand() * 0.25, 0) : new T.ConeGeometry(0.22, 0.55, 4),
+      std(rock ? 0x9a8a78 : 0x9aa83a));
+    m.position.y = rock ? 0.1 : 0.27; m.rotation.y = rand() * 3;
+    prop(m, i % 4 === 3 ? 2 + rand() * 1.5 : -2.2 - rand() * 8);
+  }
+  const hole = new T.Group();
+  const flat = (r, color, y) => { const g = new T.CircleGeometry(r, 8); g.rotateX(-PI / 2);
+    const m = new T.Mesh(g, basic(color)); m.position.y = y; m.scale.z = 0.72; hole.add(m); };
+  flat(1.45, 0x8a5a22, 0.02); flat(1.2, 0x070403, 0.04);
+  world.add(hole);
+  const puffs = Array.from({ length: 6 }, (_, i) => {
+    const m = new T.Mesh(new T.IcosahedronGeometry(0.28, 0), std(0xf2dfb8)); world.add(m);
+    return { m, a: i / 6 * PI * 2 };
+  });
+
+  // 地面が流れた距離。10拍目で穴がチーターの真下に来て止まり、13拍目からまた流れ出す
+  function scrollAt(b) {
+    const n = Math.floor(b / LOOP), bl = b - LOOP * n, u = bl - T_NEXT;
+    const s = bl < T_EDGE ? SPEED * bl : bl < T_NEXT ? 50 : u < 1.2 ? 50 + SPEED * u * u / 2.4 : 53 + SPEED * (u - 1.2);
+    return LAP * n + s;
+  }
+
+  // ---------- チーター（+x を向く。body の原点が胴の中心） ----------
+  const FUR = 0xf0b545, cat = new T.Group(), body = new T.Group();
+  cat.add(body); world.add(cat);
+  const furMat = std(FUR), blackMat = basic(0x15100c), paleMat = std(0xfff0d2);
+  { // 胴: 胸が太く腰が細い六角柱
+    const g = new T.CylinderGeometry(0.31, 0.2, 1.5, 6); g.rotateZ(-PI / 2);
+    const torso = new T.Mesh(g, furMat); torso.scale.z = 0.75; body.add(torso);
+    for (let i = 0; i < 46; i++) { // 斑点
+      const x = -0.68 + rand() * 1.3, r = (0.2 + 0.11 * (x + 0.75) / 1.5) * 0.95, th = (rand() - 0.5) * 4.6;
+      const spot = new T.Mesh(new T.IcosahedronGeometry(0.035 + rand() * 0.02, 0), blackMat);
+      spot.position.set(x, r * Math.cos(th), 0.75 * r * Math.sin(th)); body.add(spot);
+    }
+  }
+  const neck = new T.Mesh(new T.BoxGeometry(0.5, 0.3, 0.26), furMat);
+  neck.position.set(0.82, 0.24, 0); neck.rotation.z = 0.75; body.add(neck);
+  const head = new T.Group(); head.position.set(1.0, 0.5, 0); body.add(head);
+  head.add(new T.Mesh(new T.BoxGeometry(0.42, 0.36, 0.38), furMat));
+  const snout = new T.Mesh(new T.BoxGeometry(0.22, 0.2, 0.26), paleMat); snout.position.set(0.29, -0.07, 0);
+  const nose = new T.Mesh(new T.BoxGeometry(0.06, 0.07, 0.12), blackMat); nose.position.set(0.41, 0, 0);
+  head.add(snout, nose);
+  const eyes = [];
+  for (const s of [-1, 1]) {
+    const ear = new T.Mesh(new T.ConeGeometry(0.08, 0.14, 4), furMat); ear.position.set(-0.1, 0.24, s * 0.13);
+    const eye = new T.Mesh(new T.IcosahedronGeometry(0.065, 0), std(0xffffff)); eye.position.set(0.16, 0.07, s * 0.185);
+    const pupil = new T.Mesh(new T.IcosahedronGeometry(0.032, 0), blackMat); pupil.position.set(0.035, 0, s * 0.04);
+    eye.add(pupil); eyes.push(eye);
+    const tear = new T.Mesh(new T.BoxGeometry(0.035, 0.22, 0.02), blackMat); // 目から口へ下りる黒い線
+    tear.position.set(0.24, -0.06, s * 0.195); tear.rotation.z = 0.5;
+    head.add(ear, eye, tear);
+  }
+  const tail = []; // しっぽ: 4節の鎖。先が黒い
+  { let parent = body, x = -0.72, y = 0.08;
+    for (let i = 0; i < 4; i++) {
+      const g = new T.BoxGeometry(0.34, 0.085 - i * 0.008, 0.085 - i * 0.008); g.translate(-0.17, 0, 0);
+      const seg = new T.Group(); seg.position.set(x, y, 0);
+      seg.add(new T.Mesh(g, i === 3 ? blackMat : furMat));
+      parent.add(seg); tail.push(seg); parent = seg; x = -0.34; y = 0;
+    } }
+  const legs = [];
+  for (const front of [1, 0]) for (const s of [-1, 1]) {
+    const ug = new T.BoxGeometry(0.13, 0.5, 0.12); ug.translate(0, -0.25, 0);
+    const lg = new T.BoxGeometry(0.09, 0.48, 0.09); lg.translate(0, -0.24, 0);
+    const upper = new T.Group(); upper.position.set(front ? 0.55 : -0.6, -0.08, s * 0.15);
+    const lower = new T.Group(); lower.position.y = -0.5;
+    const paw = new T.Mesh(new T.BoxGeometry(0.19, 0.08, 0.13), furMat); paw.position.set(0.04, -0.5, 0);
+    lower.add(new T.Mesh(lg, furMat), paw);
+    upper.add(new T.Mesh(ug, furMat), lower);
+    body.add(upper); legs.push({ front, off: (s > 0 ? 0.5 : 0) + (front ? 0 : PI), upper, lower });
+  }
+  const bang = new T.Group(); // 頭の上の「！」
+  const b1 = new T.Mesh(new T.BoxGeometry(0.12, 0.42, 0.06), basic(0xff3030)); b1.position.y = 0.2;
+  const b2 = new T.Mesh(new T.BoxGeometry(0.12, 0.12, 0.06), basic(0xff3030)); b2.position.y = -0.14;
+  bang.add(b1, b2); bang.position.set(1.8, 1.8, 0); cat.add(bang);
+  const shadow = new T.Mesh((() => { const g = new T.CircleGeometry(1, 8); g.rotateX(-PI / 2); return g; })(),
+    new T.MeshBasicMaterial({ color: 0x3a2408, transparent: true, opacity: 0.3 }));
+  shadow.scale.set(1.1, 1, 0.3); shadow.position.y = 0.05; world.add(shadow);
+
+  // ---------- 毎フレーム ----------
+  function draw(b) {
+    const n = Math.floor(b / LOOP), bl = b - LOOP * n, s = scrollAt(b);
+    const k0 = Math.floor(s) - NT / 2;
+    for (let j = 0; j < NT; j++) {
+      const k = k0 + j;
+      dummy.position.set(k + 0.5 - s, -0.2, -28); dummy.updateMatrix();
+      tiles.setMatrixAt(j, dummy.matrix); tiles.setColorAt(j, k & 1 ? cA : cB);
+    }
+    tiles.instanceMatrix.needsUpdate = true; tiles.instanceColor.needsUpdate = true;
+    for (const p of props) p.obj.position.x = wrap(p.xw - s);
+    hole.position.x = wrap(50 - s);
+
+    // 状態ごとの値
+    let x = 0, y = 0, pitch = 0, phi = b * 2 * PI, amp = 1, headY = 0, headZ = 0, eye = 1, fall = 0, jump = 0, visible = true;
+    if (bl >= T_EDGE && bl < T_FALL) {        // 宙で足だけ回る → 下を見る → こっちを見る
+      phi = b * 6 * PI; amp = 0.55 * (1 - smooth((bl - 10.9) / 0.3));
+      y = 0.45 * smooth((bl - T_EDGE) / 0.25); // 穴の上に「立って」見えないよう、ふわっと浮く
+      headZ = -0.7 * (smooth((bl - 10.45) / 0.2) - smooth((bl - 10.9) / 0.15));
+      headY = -1.15 * smooth((bl - 10.95) / 0.15);
+      eye = 1 + 0.8 * smooth((bl - 10.45) / 0.15);
+    } else if (bl >= T_FALL && bl < T_NEXT) { // 落ちる
+      const t = (bl - T_FALL) * BS;
+      y = 0.45 - 8 * t * t; fall = clamp(t * 5); pitch = 0.6 * fall; amp = 0; headY = -1.15; eye = 1.8;
+      visible = y > -3.5;
+    } else if (bl >= T_NEXT) {                // 次のチーターが左から来て、穴を跳び越える
+      const u = bl - T_NEXT;
+      x = -11 * (1 - outCubic(u / 3));
+      jump = Math.sin(PI * clamp((u - 0.85) / 0.6)); y = 0.9 * jump; pitch = 0.25 * Math.cos(PI * clamp((u - 0.85) / 0.6)) * (jump > 0 ? 1 : 0);
+    }
+    cat.visible = visible;
+    cat.position.set(x, y, 0);
+    body.position.y = 1.0 + 0.07 * amp * Math.sin(phi * 2 + 1);
+    body.rotation.z = pitch + 0.09 * amp * Math.sin(phi + 0.5);
+    body.scale.set(1 + 0.05 * amp * Math.sin(phi) - 0.12 * fall, 1 + 0.3 * fall, 1);
+    head.rotation.set(0, headY, headZ - 0.09 * amp * Math.sin(phi + 0.5));
+    for (const e of eyes) e.scale.setScalar(eye);
+    for (const l of legs) {
+      let up = (l.front ? 0.15 : -0.1) + 0.95 * amp * Math.sin(phi + l.off);
+      let lo = -(0.25 + (0.3 + 0.5 * amp) * (0.5 + 0.5 * Math.cos(phi + l.off)));
+      up = lerp(up, l.front ? 1.2 : -1.2, jump); lo = lerp(lo, -0.1, jump);   // 跳ぶときは前後に伸びる
+      up = lerp(up, l.front ? 2.5 : -0.5, fall); lo = lerp(lo, -0.3, fall);   // 落ちるときは前足を上げる
+      l.upper.rotation.z = up; l.lower.rotation.z = lo;
+    }
+    tail.forEach((seg, i) => { seg.rotation.z = lerp(0.1 + 0.22 * amp * Math.sin(phi - i * 0.7) - (i === 0 ? 0.35 : 0), -0.5, fall); });
+    bang.visible = bl >= 10.45 && bl < T_FALL;
+    bang.scale.setScalar(1 + 0.25 * Math.sin(b * 8 * PI));
+    shadow.visible = bl < T_EDGE || bl >= T_NEXT;
+    shadow.position.x = x; shadow.scale.x = 1.1 * (1 - 0.4 * jump);
+    shadow.material.opacity = Math.abs(x - hole.position.x) < 1.3 ? 0 : 0.3;
+
+    // 着地: 土煙と揺れ
+    const d = bl - 12.6;
+    for (const p of puffs) {
+      const u = clamp(d / 1.2);
+      p.m.visible = d > 0 && u < 1;
+      p.m.position.set(hole.position.x + Math.cos(p.a) * (0.3 + 0.9 * u), 0.2 + 1.3 * u, Math.sin(p.a) * (0.2 + 0.6 * u));
+      p.m.scale.setScalar(Math.sin(PI * u) * 1.2 + 0.001);
+    }
+    world.position.y = d > 0 && d < 1 ? 0.09 * Math.sin(d * 40) * Math.exp(-d * 6) : 0;
+  }
+
+  // ---------- 音 ----------
+  const BASS = [82.4, 98, 110, 123.5];
+  function playStep(step, t, A) {
+    const beat = (step >> 1) % LOOP, on = step % 2 === 0, running = beat < T_EDGE || beat >= 14;
+    if (running && on) {
+      A.tone(t, 'sine', 150, 45, 0.8, 0.2);
+      for (const k of [0, 0.14, 0.28]) A.noise(t + k * A.beatSec, 'lowpass', 500, 0.45, 0.06); // 足音
+    } else if (running) {
+      A.noise(t, 'highpass', 7000, 0.2, 0.05);
+      A.tone(t, 'sawtooth', BASS[beat % 4], BASS[beat % 4], 0.16, 0.18);
+    } else if (beat === 10 && on) A.noise(t, 'bandpass', 900, 0.5, 0.25);            // 急に止まる
+    else if (beat === 10) A.tone(t, 'triangle', 1760, 1760, 0.22, 0.5);              // 気づく
+    else if (beat === 11 && on) A.tone(t + 0.4 * A.beatSec, 'sine', 1400, 170, 0.3, 1.25 * A.beatSec, 1.0 * A.beatSec); // ひゅー
+    else if (beat === 12 && !on) {                                                   // どすん
+      A.tone(t + 0.1 * A.beatSec, 'sine', 90, 30, 1.0, 0.45); A.noise(t + 0.1 * A.beatSec, 'lowpass', 300, 0.7, 0.3);
+    }
+  }
+
+  S.start({ draw, playStep, captureCamera(b, camera) {
+    camera.position.set(2.2 + 0.4 * Math.sin(b * PI / 16), 2.1, 6.6);
+  } });
+})();
+</script>
+</body>
+</html>

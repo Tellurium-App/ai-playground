@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ブドウが武道</title>
+<link rel="stylesheet" href="../common.css">
+<style>html, body { background: #2a1810; }</style>
+<link rel="stylesheet" href="../../playground-back.css">
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "65a7846fb78a4f5c89d6ad1978378dd4"}'></script>
+</head>
+<body>
+<a class="pg-back" href="../">ダジャレ一覧に戻る</a>
+<h1><span id="logo">ブドウが武道</span><small>ドラッグで回せる</small></h1>
+<canvas id="c"></canvas>
+<div id="ui"><button id="sound" aria-pressed="false">♪ 音を出す</button></div>
+<script src="../vendor/three-studio.bundle.js"></script>
+<script src="../common.js"></script>
+<script>
+(() => {
+  const S = Dajare.boot({ bpm: 118, background: 0x2a1810, fog: [14, 32], cam: { pos: [1.8, 2.4, 8.8], target: [0, 1.5, 0] } });
+  const { T, scene, rand, PI, clamp, smooth, outCubic, outBack, lerp } = S;
+  const LOOP = 32, HIT0 = 2, NH = 12; // 32拍で一巡。2拍目から2拍ごとに12発
+  const std = (color, extra) => new T.MeshStandardMaterial({ color, flatShading: true, roughness: 0.7, ...extra });
+  const basic = color => new T.MeshBasicMaterial({ color });
+
+  scene.add(new T.HemisphereLight(0xfff0dd, 0x3a2416, 1.5));
+  const key = new T.DirectionalLight(0xffffff, 2.2); key.position.set(3, 6, 5); scene.add(key);
+
+  // ---------- 道場 ----------
+  for (let i = 0; i < 14; i++) { // 板の間
+    const plank = new T.Mesh(new T.BoxGeometry(20, 0.1, 0.98), std(i % 2 ? 0x9a6a3a : 0x8a5c30));
+    plank.position.set(0, -0.05, -4 + i);
+    scene.add(plank);
+  }
+  const wall = new T.Mesh(new T.BoxGeometry(20, 7, 0.2), std(0xd9c9a6)); wall.position.set(0, 3.5, -4.6); scene.add(wall);
+  for (const x of [-6, -2, 2, 6]) { // 柱
+    const post = new T.Mesh(new T.BoxGeometry(0.3, 7, 0.3), std(0x4a2f1a)); post.position.set(x, 3.5, -4.45); scene.add(post);
+  }
+  const rail = new T.Mesh(new T.BoxGeometry(20, 0.25, 0.3), std(0x4a2f1a)); rail.position.set(0, 4.6, -4.45); scene.add(rail);
+  { // 掛け軸
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 512;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#7a1f1f'; g.fillRect(0, 0, 256, 512);
+    g.fillStyle = '#f6efe0'; g.fillRect(22, 40, 212, 432);
+    g.fillStyle = '#111'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = 'bold 170px "Yu Mincho", "Hiragino Mincho ProN", serif';
+    g.fillText('武', 128, 150); g.fillText('道', 128, 350);
+    const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace;
+    const scroll = new T.Mesh(new T.PlaneGeometry(1.5, 3), new T.MeshBasicMaterial({ map: tex }));
+    scroll.position.set(-4, 2.75, -4.45); scene.add(scroll);
+  }
+
+  // ---------- ブドウ ----------
+  const R = 0.29, D = 0.5, DY = 0.43, TOP = 1.5;
+  const bunch = new T.Group(), ghost = new T.Object3D();
+  scene.add(bunch);
+  const grapeGeo = new T.IcosahedronGeometry(R, 1);
+  const grapeMat = () => std(new T.Color().setHSL(0.76 + rand() * 0.05, 0.55, 0.3 + rand() * 0.1), { roughness: 0.35 });
+  const flyers = [];
+  function row(n, y, z, fly) {
+    for (let i = 0; i < n; i++) {
+      const m = new T.Mesh(grapeGeo, grapeMat());
+      const local = new T.Vector3((i - (n - 1) / 2) * D, y, z);
+      if (fly) { scene.add(m); flyers.push({ m, local, key: y + rand() * 0.2 }); }
+      else { m.position.copy(local); bunch.add(m); }
+    }
+  }
+  row(4, TOP, 0, false); row(3, TOP - DY, 0, false); // 顔の2段は最後まで残る
+  row(2, TOP - 2 * DY, 0, true); row(1, TOP - 3 * DY, 0, true);
+  row(3, TOP - 0.5 * DY, -0.42, true); row(2, TOP - 1.5 * DY, -0.42, true); row(1, TOP - 2.5 * DY, -0.42, true);
+  row(2, TOP - DY, -0.82, true); row(1, TOP - 2 * DY, -0.82, true);
+  flyers.sort((a, b) => a.key - b.key); // 下の粒から飛ぶ
+
+  const limbMat = std(0x4b3220), fistMat = std(0x5a2a86, { roughness: 0.35 });
+  const stem = new T.Mesh(new T.CylinderGeometry(0.05, 0.07, 0.42, 5), limbMat); stem.position.set(0, TOP + 0.45, 0);
+  const leaf = new T.Mesh(new T.ConeGeometry(0.32, 0.6, 4), std(0x4f9a3a)); leaf.scale.z = 0.2;
+  leaf.position.set(0.3, TOP + 0.5, 0); leaf.rotation.z = -1.1;
+  bunch.add(stem, leaf);
+
+  // 鉢巻きと黒帯
+  const ring = (r, tube, mat, y, sz) => {
+    const g = new T.TorusGeometry(r, tube, 4, 14); g.rotateX(PI / 2);
+    const m = new T.Mesh(g, mat); m.position.y = y; m.scale.z = sz; bunch.add(m); return m;
+  };
+  ring(1.02, 0.06, std(0xffffff), TOP + 0.2, 0.42);
+  const sun = new T.Mesh(new T.CircleGeometry(0.09, 8), basic(0xe02020)); sun.position.set(0, TOP + 0.2, 0.5); bunch.add(sun);
+  const beltMat = std(0x111111);
+  ring(0.84, 0.075, beltMat, TOP - DY - 0.1, 0.5);
+  for (const s of [-1, 1]) {
+    const tail = new T.Mesh(new T.BoxGeometry(0.1, 0.34, 0.03), beltMat);
+    tail.position.set(s * 0.08, TOP - DY - 0.3, 0.46); tail.rotation.z = s * 0.35; bunch.add(tail);
+  }
+
+  // 顔
+  const pupils = [];
+  for (const s of [-1, 1]) {
+    const eye = new T.Mesh(new T.IcosahedronGeometry(0.115, 0), std(0xffffff)); eye.scale.z = 0.4;
+    eye.position.set(s * 0.25, TOP + 0.02, R * 0.92);
+    const pupil = new T.Mesh(new T.IcosahedronGeometry(0.055, 0), basic(0x0a0a0a)); pupil.position.z = 0.1;
+    eye.add(pupil); pupils.push(pupil);
+    const brow = new T.Mesh(new T.BoxGeometry(0.26, 0.055, 0.03), basic(0x0a0a0a));
+    brow.position.set(s * 0.25, TOP + 0.17, R * 0.92 + 0.07); brow.rotation.z = -s * 0.45; // 内側が下がる怒り眉
+    bunch.add(eye, brow);
+  }
+  const mouth = new T.Mesh(new T.CircleGeometry(0.15, 6, PI, PI), new T.MeshBasicMaterial({ color: 0xff4f6a, side: T.DoubleSide }));
+  mouth.position.set(0, TOP - DY * 0.5 + 0.03, R + 0.06); bunch.add(mouth);
+
+  // 腕
+  const SHOULDER_X = 0.98, SHOULDER_Y = 1.32, UP = 0.45, FORE = 0.42;
+  const arms = [-1, 1].map(s => {
+    const shoulder = new T.Group(); shoulder.position.set(s * SHOULDER_X, SHOULDER_Y, 0);
+    const ug = new T.BoxGeometry(UP, 0.11, 0.09); ug.translate(UP / 2, 0, 0);
+    const fg = new T.BoxGeometry(FORE, 0.1, 0.08); fg.translate(FORE / 2, 0, 0);
+    const elbow = new T.Group(); elbow.position.x = UP;
+    const fist = new T.Mesh(new T.IcosahedronGeometry(0.16, 1), fistMat); fist.position.x = FORE + 0.08;
+    elbow.add(new T.Mesh(fg, limbMat), fist);
+    shoulder.add(new T.Mesh(ug, limbMat), elbow);
+    bunch.add(shoulder);
+    return { s, shoulder, elbow };
+  });
+  // 脚（腰から足先まで伸び縮みする棒）
+  const legs = [-1, 1].map(s => {
+    const g = new T.BoxGeometry(0.1, 1, 0.09); g.translate(0, -0.5, 0);
+    const leg = new T.Mesh(g, limbMat);
+    const foot = new T.Mesh(new T.IcosahedronGeometry(0.17, 1), fistMat); foot.scale.y = 0.75;
+    scene.add(leg, foot);
+    return { s, leg, foot };
+  });
+  const star = new T.Mesh(new T.IcosahedronGeometry(0.3, 0), basic(0xfff6b0)); scene.add(star);
+
+  // ---------- 動き ----------
+  // bl（0〜32拍）から体の姿勢を決める。n は何発目か、ext は突き・蹴りの伸び（0〜1）
+  function pose(bl) {
+    let n = -1, ext = 0, side = 1, kick = false, u = 0;
+    if (bl >= HIT0 && bl < HIT0 + 2 * NH) {
+      n = Math.floor((bl - HIT0) / 2); u = bl - HIT0 - 2 * n;
+      ext = u < 0.12 ? outCubic(u / 0.12) : u < 1.1 ? 1 : 1 - smooth((u - 1.1) / 0.5);
+      side = n % 2 ? -1 : 1; kick = n % 4 === 3;
+    }
+    const bow = smooth((bl - 28) / 0.5) - smooth((bl - 29.4) / 0.6); // 28〜30拍は礼
+    return { n, ext, side, kick, u, bow,
+      x: kick ? -side * 0.25 * ext : side * 0.3 * ext,
+      y: 0.55 + 0.03 * Math.sin(bl * 2 * PI) - 0.08 * ext,
+      rz: kick ? side * 0.28 * ext : -side * 0.1 * ext };
+  }
+  const applyPose = (o, p) => { o.position.set(p.x, p.y, 0); o.rotation.set(p.bow * 0.7, 0, p.rz); o.updateMatrixWorld(true); };
+
+  // 粒の飛び方は起動時に決めておく（どの拍を描いても同じ絵になる）
+  const G = 9.8;
+  flyers.forEach((f, n) => {
+    f.hb = HIT0 + 2 * n + 0.1; // 当たった瞬間に離れる
+    f.back = 29.6 + n * 0.12;  // 礼の終わりに1粒ずつ戻る
+    const side = n % 2 ? -1 : 1;
+    applyPose(ghost, pose(f.hb));
+    f.p0 = ghost.localToWorld(f.local.clone());
+    f.v = new T.Vector3(side * (2.4 + 1.6 * rand()), 3 + 2 * rand(), -1 + 2.6 * rand());
+    f.spin = 4 + 6 * rand();
+  });
+  function ballistic(f, t, out) { // 2回はねて止まる
+    let y0 = f.p0.y, vy = f.v.y, tt = t, th = 0;
+    for (let k = 0; k < 3; k++) {
+      const vimp = Math.sqrt(vy * vy + 2 * G * (y0 - R)), tl = (vy + vimp) / G;
+      if (tt < tl) return out.set(f.p0.x + f.v.x * t, y0 + vy * tt - 0.5 * G * tt * tt, f.p0.z + f.v.z * t);
+      tt -= tl; th += tl; vy = vimp * 0.4; y0 = R;
+    }
+    return out.set(f.p0.x + f.v.x * th, R, f.p0.z + f.v.z * th);
+  }
+
+  const v3 = new T.Vector3(), down = new T.Vector3(0, -1, 0), dir = new T.Vector3();
+  function draw(b) {
+    const bl = ((b % LOOP) + LOOP) % LOOP, p = pose(bl);
+    applyPose(bunch, p);
+
+    for (const a of arms) {
+      const e = (p.n >= 0 && !p.kick && a.s === p.side) ? p.ext : 0; // 突く側だけ伸びる。反対は腰に引く
+      const ang = lerp(lerp(-1.4, 0, e), -1.5, p.bow), bend = lerp(lerp(1.3, 0, e), 0, p.bow);
+      a.shoulder.rotation.z = a.s > 0 ? ang : PI - ang;
+      a.elbow.rotation.z = a.s > 0 ? bend : -bend;
+    }
+    for (const l of legs) {
+      const k = (p.kick && l.s === p.side) ? p.ext : 0;
+      l.foot.position.set(lerp(l.s * 0.7, l.s * 1.95, k), lerp(0.13, 1.4, k), 0);
+      bunch.localToWorld(v3.set(l.s * 0.38, 0.9, 0));
+      l.leg.position.copy(v3);
+      dir.copy(l.foot.position).sub(v3);
+      l.leg.scale.y = dir.length();
+      l.leg.quaternion.setFromUnitVectors(down, dir.normalize());
+    }
+    // 当たりの光
+    const flash = p.n >= 0 && p.u < 0.35 ? Math.sin(PI * p.u / 0.35) : 0;
+    star.visible = flash > 0;
+    if (flash > 0) {
+      if (p.kick) star.position.set(p.side * 2.2, 1.45, 0);
+      else bunch.localToWorld(star.position.set(p.side * (SHOULDER_X + UP + FORE + 0.3), SHOULDER_Y, 0));
+      star.scale.setScalar(flash * 1.3); star.rotation.set(b * 5, b * 7, 0);
+    }
+    mouth.scale.y = 0.25 + 1.1 * (p.n >= 0 ? clamp(1 - p.u / 0.7) : 0); // 気合い
+    for (const pu of pupils) pu.position.x = p.n >= 0 ? p.side * 0.03 * p.ext : 0;
+
+    for (const f of flyers) {
+      if (bl < f.hb) { bunch.localToWorld(f.m.position.copy(f.local)); f.m.scale.setScalar(1); f.m.rotation.set(0, 0, 0); }
+      else if (bl < f.back) {
+        const t = (bl - f.hb) * 60 / 118;
+        ballistic(f, t, f.m.position);
+        f.m.rotation.set(t * f.spin, 0, t * f.spin * 0.7);
+        f.m.scale.setScalar(clamp((f.back - bl) / 0.25)); // 戻る直前に床の粒が消える
+      } else { bunch.localToWorld(f.m.position.copy(f.local)); f.m.scale.setScalar(outBack((bl - f.back) / 0.4)); f.m.rotation.set(0, 0, 0); }
+    }
+  }
+
+  // ---------- 音（太鼓と拍子木） ----------
+  const SCALE = [293.7, 349.2, 392, 440, 523.3];
+  function playStep(step, t, A) {
+    const beat = (step >> 1) % LOOP;
+    if (step % 2 === 0) {
+      const hit = beat >= HIT0 && beat < HIT0 + 2 * NH && beat % 2 === 0;
+      if (hit) { A.tone(t, 'sine', 125, 45, 1.0, 0.4); A.noise(t, 'bandpass', 1500, 0.5, 0.1); }
+      else A.tone(t, 'sine', 170, 90, 0.3, 0.15);
+      if (beat === 28) { A.tone(t, 'sine', 196, 196, 0.35, 1.6); A.tone(t, 'sine', 294, 294, 0.2, 1.4); } // 礼
+    } else {
+      A.tone(t, 'square', 900, 880, 0.1, 0.04);
+      if (beat < 28) A.tone(t, 'triangle', SCALE[(beat * 3 + (beat >> 2)) % 5], SCALE[(beat * 3 + (beat >> 2)) % 5], 0.2, 0.2);
+    }
+  }
+
+  S.start({ draw, playStep, captureCamera(b, camera) {
+    const a = 0.12 + 0.32 * Math.sin(b * PI / 16), r = 7.7 - 0.3 * Math.cos(b * PI / 8);
+    camera.position.set(Math.sin(a) * r, 2.0, Math.cos(a) * r);
+  } });
+})();
+</script>
+</body>
+</html>
